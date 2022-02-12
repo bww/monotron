@@ -1,9 +1,9 @@
-use tokio_postgres::{NoTls, Error};
+use tokio_postgres;
 
-#[tokio::main] // By default, tokio_postgres uses the tokio crate as its runtime.
-async fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), tokio_postgres::Error> {
   // Connect to the database.
-  let (client, connection) = tokio_postgres::connect("host=localhost user=postgres", NoTls).await?;
+  let (client, connection) = tokio_postgres::connect("host=localhost user=postgres", tokio_postgres::NoTls).await?;
   
   // The connection object performs the actual communication with the database,
   // so spawn it off to run on its own.
