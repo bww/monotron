@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# where am i?
+me="$0"
+me_home=$(dirname "$0")
+me_home=$(cd "$me_home" && pwd)
+
+if [ -z "$1" ]; then
+  echo "*** Provide a command: start, stop"
+  exit 1
+fi
+
+local_deploy="$(cd "$me_home/../deploy/local" && pwd)"
+dockerfile="$local_deploy/local.compose"
+
+case "$1" in
+  start)
+    docker-compose -f "$dockerfile" up -d
+    ;;
+  stop)
+    docker-compose -f "$dockerfile" down
+    ;;
+  *)
+    echo "*** No such command: $1" && exit 1
+    ;;
+esac

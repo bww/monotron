@@ -1,0 +1,19 @@
+version: '3.5'
+services:
+  
+  postgres:
+    image: postgres:11
+    container_name: monotron_postgres
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - monotron_net
+    ports:
+      - 5432:5432
+    expose:
+      - 5433
+  
+networks:
+  monotron_net:
+    name: monotron_net
+    driver: bridge

@@ -1,10 +1,10 @@
 use std::io;
 use std::fmt;
+use std::num;
 use std::error;
 
 use url;
 use xid;
-use tokio_postgres;
 
 use crate::store;
 
@@ -14,8 +14,8 @@ pub struct Generic {
 }
 
 impl Generic {
-  pub fn new(msg: String) -> Generic {
-    Generic{msg: msg}
+  pub fn new(msg: &str) -> Generic {
+    Generic{msg: msg.to_string()}
   }
 }
 
@@ -38,8 +38,8 @@ pub enum Error {
   NotFoundError(store::error::Error),
   IOError(io::Error),
   URLParseError(url::ParseError),
-  PostgresError(tokio_postgres::Error),
-  ParseIdError(xid::ParseIdError)
+  ParseIdError(xid::ParseIdError),
+  ParseIntError(num::ParseIntError),
 }
 
 impl From<Generic> for Error {
@@ -69,15 +69,15 @@ impl From<url::ParseError> for Error {
   }
 }
 
-impl From<tokio_postgres::Error> for Error {
-  fn from(error: tokio_postgres::Error) -> Self {
-    Self::PostgresError(error)
-  }
-}
-
 impl From<xid::ParseIdError> for Error {
   fn from(error: xid::ParseIdError) -> Self {
     Self::ParseIdError(error)
+  }
+}
+
+impl From<num::ParseIntError> for Error {
+  fn from(error: num::ParseIntError) -> Self {
+    Self::ParseIntError(error)
   }
 }
 
@@ -89,8 +89,8 @@ impl fmt::Display for Error {
       Self::NotFoundError(err) => err.fmt(f),
       Self::IOError(err) => err.fmt(f),
       Self::URLParseError(err) => err.fmt(f),
-      Self::PostgresError(err) => err.fmt(f),
       Self::ParseIdError(err) => err.fmt(f),
+      Self::ParseIntError(err) => err.fmt(f),
     }
   }
 }
