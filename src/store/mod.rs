@@ -40,9 +40,8 @@ impl Store {
     self.client
       .execute(
         "CREATE TABLE IF NOT EXISTS version (
-           id         SERIAL PRIMARY KEY,
-           api_key_id BIGINT NOT NULL REFERENCES api_key (id),
-           type       VARCHAR(64) NOT NULL,
+           key        VARCHAR(256) NOT NULL PRIMARY KEY,
+           creator_id BIGINT NOT NULL REFERENCES api_key (id),
            token      VARCHAR(256), -- nullable
            value      VARCHAR(256) NOT NULL,
            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

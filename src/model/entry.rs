@@ -1,38 +1,40 @@
 use crate::error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Value {
-  Single(u64),
-  Semver(String),
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Entry {
+  key: String,
+  creator_id: u64,
   token: Option<String>,
-  value: Value,
+  value: u64,
 }
 
 impl Entry {
   
-  pub fn new(value: &Value) -> Entry {
+  pub fn new(key: &str, creator_id: u64, value: u64) -> Entry {
     Entry{
+      key: key.to_string(),
+      creator_id: creator_id,
       token: None,
-      value: value.to_owned(),
+      value: value,
     }
   }
-  
-  pub fn new_with_token(token: &str, value: &Value) -> Entry {
+
+  pub fn new_with_token(key: &str, token: &str, creator_id: u64, value: u64) -> Entry {
     Entry{
+      key: key.to_string(),
+      creator_id: creator_id,
       token: Some(token.to_string()),
-      value: value.to_owned(),
+      value: value,
     }
   }
   
   pub fn next(&self) -> Result<Entry, error::Error> {
-    match self.value {
-      Value::Single(val) => Ok(Entry::new(&Value::Single(val + 1))),
-      _ => Err(error::Generic::new("Method does not support type").into())
-    }
+    Ok(Entry{
+      key: self.key.to_owned(),
+      creator_id: self.creator_id,
+      token: if let Some(tok) = &self.token { Some(tok.to_string()) } else { None },
+      value: self.value + 1,
+    })
   }
   
 }
@@ -43,14 +45,14 @@ mod tests {
   
   #[test]
   fn next_single() {
-    let entry = Entry::new(&Value::Single(10));
-    let expect = Entry::new(&Value::Single(11));
+    let entry = Entry::new("a", 1, 10);
+    let expect = Entry::new("a", 1, 11);
     match entry.next() {
       Ok(v) => assert_eq!(expect, v),
       Err(err) => assert!(false, "Expected no error; got {:?}", err),
     };
     let entry = expect;
-    let expect = Entry::new(&Value::Single(12));
+    let expect = Entry::new("a", 1, 12);
     match entry.next() {
       Ok(v) => assert_eq!(expect, v),
       Err(err) => assert!(false, "Expected no error; got {:?}", err),
