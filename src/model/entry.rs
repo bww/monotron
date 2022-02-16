@@ -2,15 +2,15 @@ use crate::error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
-  key: String,
-  creator_id: u64,
-  token: Option<String>,
-  value: u64,
+  pub key: String,
+  pub creator_id: i64,
+  pub token: Option<String>,
+  pub value: i64,
 }
 
 impl Entry {
   
-  pub fn new(key: &str, creator_id: u64, value: u64) -> Entry {
+  pub fn new(key: &str, creator_id: i64, value: i64) -> Entry {
     Entry{
       key: key.to_string(),
       creator_id: creator_id,
@@ -19,7 +19,7 @@ impl Entry {
     }
   }
 
-  pub fn new_with_token(key: &str, creator_id: u64, token: &str, value: u64) -> Entry {
+  pub fn new_with_token(key: &str, creator_id: i64, token: &str, value: i64) -> Entry {
     Entry{
       key: key.to_string(),
       creator_id: creator_id,

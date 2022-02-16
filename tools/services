@@ -7,6 +7,9 @@ me="$0"
 me_home=$(dirname "$0")
 me_home=$(cd "$me_home" && pwd)
 
+# deps
+. "$me_home/_lib.sh"
+
 if [ -z "$1" ]; then
   echo "*** Provide a command: start, stop"
   exit 1
