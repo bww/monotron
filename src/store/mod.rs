@@ -12,7 +12,7 @@ pub struct Store {
 impl Store {
   
   pub async fn new(host: &str, db: &str) -> Result<Store, error::Error> {
-    let (client, conn) = tokio_postgres::connect(&format!("host={} database={} user=postgres", host, db), tokio_postgres::NoTls).await?;
+    let (client, conn) = tokio_postgres::connect(&format!("postgresql://postgres@{}/{}", host, db), tokio_postgres::NoTls).await?;
     
     tokio::spawn(async move {
       if let Err(e) = conn.await {
@@ -43,7 +43,7 @@ impl Store {
          key        VARCHAR(256) NOT NULL PRIMARY KEY,
          creator_id BIGINT NOT NULL REFERENCES api_key (id),
          token      VARCHAR(256), -- nullable
-         value      VARCHAR(256) NOT NULL,
+         value      BIGINT NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
       )",
