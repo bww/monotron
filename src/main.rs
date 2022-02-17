@@ -7,7 +7,7 @@ use warp::{http, Filter};
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
   let store = store::Store::new("localhost", "monotron_development").await?;
-  let store_filter = warp::any().map(move || &store);
+  let store_filter = warp::any().map(move || store.clone());
   
   let inc_entry = warp::path!("hello" / String)
     .and(store_filter.clone())
