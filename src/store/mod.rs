@@ -13,7 +13,8 @@ pub struct Store {
 impl Store {
   
   pub async fn new(host: &str, db: &str) -> Result<Store, error::Error> {
-    let manager = bb8_postgres::PostgresConnectionManager::new(&format!("postgresql://postgres@{}/{}", host, db), tokio_postgres::NoTls);
+    let config: tokio_postgres::config::Config = str::parse(&format!("postgresql://postgres@{}/{}", host, db))?;
+    let manager = bb8_postgres::PostgresConnectionManager::new(config, tokio_postgres::NoTls);
     let pool = bb8::Pool::builder()
       .max_size(15)
       .build(manager)

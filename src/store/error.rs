@@ -2,6 +2,8 @@ use std::io;
 use std::fmt;
 
 use url;
+use bb8;
+use warp;
 use tokio_postgres;
 
 #[derive(Debug)]
@@ -10,7 +12,10 @@ pub enum Error {
   IOError(io::Error),
   NotFoundError(tokio_postgres::Error),
   PostgresError(tokio_postgres::Error),
+  ConnectionError(bb8::RunError<tokio_postgres::Error>),
 }
+
+impl warp::reject::Reject for Error {}
 
 impl From<url::ParseError> for Error {
   fn from(error: url::ParseError) -> Self {
@@ -30,6 +35,12 @@ impl From<tokio_postgres::Error> for Error {
   }
 }
 
+impl From<bb8::RunError<tokio_postgres::Error>> for Error {
+  fn from(error: bb8::RunError<tokio_postgres::Error>) -> Self {
+    Self::ConnectionError(error)
+  }
+}
+
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
@@ -37,6 +48,7 @@ impl fmt::Display for Error {
       Self::IOError(err) => err.fmt(f),
       Self::NotFoundError(err) => err.fmt(f),
       Self::PostgresError(err) => err.fmt(f),
+      Self::ConnectionError(err) => err.fmt(f),
     }
   }
 }

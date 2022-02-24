@@ -5,6 +5,7 @@ use std::error;
 
 use url;
 use xid;
+use warp;
 
 use crate::store;
 
@@ -41,6 +42,8 @@ pub enum Error {
   ParseIdError(xid::ParseIdError),
   ParseIntError(num::ParseIntError),
 }
+
+impl warp::reject::Reject for Error {}
 
 impl From<Generic> for Error {
   fn from(error: Generic) -> Self {
