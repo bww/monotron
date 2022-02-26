@@ -1,6 +1,12 @@
 use crate::error;
+use crate::store;
 
-#[derive(Debug, Clone, PartialEq)]
+use warp;
+use serde::{Serialize, Deserialize};
+use serde_json::json;
+use tokio_postgres;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
   pub key: String,
   pub creator_id: i64,
@@ -28,6 +34,15 @@ impl Entry {
     }
   }
   
+  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Entry, store::error::Error> {
+    Ok(Entry{
+      key: row.try_get(0)?,
+      creator_id: row.try_get(1)?,
+      token: row.try_get(2)?,
+      value: row.try_get(3)?,
+    })
+  }
+  
   pub fn next(&self) -> Entry {
     Entry{
       key: self.key.to_owned(),
@@ -51,6 +66,12 @@ impl Entry {
     })
   }
   
+}
+
+impl warp::Reply for Entry {
+  fn into_response(self) -> warp::reply::Response {
+    warp::reply::Response::new(json!(self).to_string().into())
+  }
 }
 
 #[cfg(test)]

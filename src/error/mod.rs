@@ -54,7 +54,7 @@ impl From<Generic> for Error {
 impl From<store::error::Error> for Error {
   fn from(error: store::error::Error) -> Self {
     match error {
-      store::error::Error::NotFoundError(_) => Self::NotFoundError(error),
+      store::error::Error::NotFoundError => Self::NotFoundError(error),
       other => Self::StoreError(other),
     }
   }

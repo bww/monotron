@@ -8,9 +8,10 @@ use tokio_postgres;
 
 #[derive(Debug)]
 pub enum Error {
+  GenericError,
+  NotFoundError,
   URLParseError(url::ParseError),
   IOError(io::Error),
-  NotFoundError(tokio_postgres::Error),
   PostgresError(tokio_postgres::Error),
   ConnectionError(bb8::RunError<tokio_postgres::Error>),
 }
@@ -44,9 +45,10 @@ impl From<bb8::RunError<tokio_postgres::Error>> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
+      Self::GenericError => "generic_error".fmt(f),
+      Self::NotFoundError => "not_found".fmt(f),
       Self::URLParseError(err) => err.fmt(f),
       Self::IOError(err) => err.fmt(f),
-      Self::NotFoundError(err) => err.fmt(f),
       Self::PostgresError(err) => err.fmt(f),
       Self::ConnectionError(err) => err.fmt(f),
     }

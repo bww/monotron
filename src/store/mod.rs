@@ -2,6 +2,7 @@ pub mod error;
 
 use bb8_postgres;
 use tokio_postgres;
+use futures::{pin_mut, StreamExt, TryStreamExt};
 
 use crate::model::entry;
 
@@ -30,7 +31,7 @@ impl Store {
     let client = self.pool.get().await?;
     
     client.execute(
-      "CREATE TABLE IF NOT EXISTS api_key (
+      "CREATE TABLE IF NOT EXISTS mn_api_key (
          id         SERIAL PRIMARY KEY,
          key        VARCHAR(256) NOT NULL UNIQUE,
          secret     VARCHAR(1024) NOT NULL,
@@ -42,9 +43,9 @@ impl Store {
     .await?;
     
     client.execute(
-      "CREATE TABLE IF NOT EXISTS entry (
+      "CREATE TABLE IF NOT EXISTS mn_entry (
          key        VARCHAR(256) NOT NULL PRIMARY KEY,
-         creator_id BIGINT NOT NULL REFERENCES api_key (id),
+         creator_id BIGINT NOT NULL REFERENCES mn_api_key (id),
          token      VARCHAR(256), -- nullable
          value      BIGINT NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -69,7 +70,7 @@ impl Store {
   pub async fn store_entry(&self, ent: &entry::Entry) -> Result<(), error::Error> {
     let client = self.pool.get().await?;
     let row = client.execute("
-      INSERT INTO entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
+      INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
       ON CONFLICT (key) DO UPDATE SET creator_id = $2, token = $3, value = $4, updated_at = now()",
       &[
         &ent.key, &ent.creator_id, &ent.token, &ent.value,
@@ -77,6 +78,36 @@ impl Store {
     )
     .await?;
     Ok(())
+  }
+  
+  pub async fn inc_entry(&self, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+
+    let stream = tx.query_raw("
+      SELECT key, token, value FROM mn_entry
+      WHERE key = $1
+      FOR UPDATE",
+      &[&key]
+    )
+    .await?;
+    pin_mut!(stream);
+
+    let row = match stream.try_next().await? {
+      Some(row) => row,
+      None => return Err(error::Error::NotFoundError),
+    };
+    
+    let entry = entry::Entry::unmarshal(&row)?;
+    if let Some(tok) = &token {
+      if let Some(cmp) = &entry.token {
+        if tok == cmp {
+          return Ok(entry);
+        }
+      }
+    }
+    
+    Ok(entry.next())
   }
   
 }

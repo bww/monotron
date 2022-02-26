@@ -43,10 +43,10 @@ async fn handle_v1(store: store::Store) -> Result<impl warp::Reply, warp::Reject
 }
 
 async fn handle_inc_entry(key: String, token: String, store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
-  let value = match store.check().await {
+  let entry = match store.inc_entry(key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
-  println!(">>> KEY TOK: {} {}", key, token);
-  Ok(warp::reply::with_status(value, http::StatusCode::OK))
+  // println!(">>> KEY TOK: {} {} {:?}", key, token, entry);
+  Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
