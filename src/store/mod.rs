@@ -105,15 +105,24 @@ impl Store {
       None => entry::Entry::new(&key, 1, None, 0),
     };
     
-    if let Some(tok) = &token {
+    let update = if let Some(tok) = &token {
       if let Some(upd) = entry.next_with_token(tok) {
-        return Ok(upd);
+        upd
       }else{
-        return Ok(entry);
+        entry.clone()
       }
-    }
+    }else{
+      entry.next()
+    };
     
-    Ok(entry.next())
+    tx.execute(
+      "UPDATE mn_entry SET value = $1 WHERE key = $2",
+      &[&entry.value, &key]
+    )
+    .await?;
+    
+    tx.commit().await?;
+    Ok(entry)
   }
   
 }
