@@ -33,7 +33,9 @@ async fn main() -> Result<(), error::Error> {
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
-  } else {
+  } else if let Some(cause) = err.find::<store::error::Error>() {
+    Ok(warp::reply::with_status("BAD_NEWS_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR))
+  }else{
     Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR))
   }
 }

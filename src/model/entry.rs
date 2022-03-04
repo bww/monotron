@@ -16,20 +16,11 @@ pub struct Entry {
 
 impl Entry {
   
-  pub fn new(key: &str, creator_id: i64, value: i64) -> Entry {
+  pub fn new(key: &str, creator_id: i64, token: Option<String>, value: i64) -> Entry {
     Entry{
       key: key.to_string(),
       creator_id: creator_id,
-      token: None,
-      value: value,
-    }
-  }
-
-  pub fn new_with_token(key: &str, creator_id: i64, token: &str, value: i64) -> Entry {
-    Entry{
-      key: key.to_string(),
-      creator_id: creator_id,
-      token: Some(token.to_string()),
+      token: token,
       value: value,
     }
   }
@@ -96,11 +87,11 @@ mod tests {
   #[test]
   fn next_with_token() {
     let ent = Entry::new("a", 1, 10);
-    assert_eq!(Some(Entry::new_with_token("a", 1, "d261470109", 11)), ent.next_with_token("d261470109"));
+    assert_eq!(Some(Entry::new("a", 1, Some("d261470109"), 11)), ent.next_with_token("d261470109"));
     
     let ent = if let Some(nxt) = ent.next_with_token("d261470109") { nxt } else { ent };
     assert_eq!(None, ent.next_with_token("d261470109")); // no change, same token
-    assert_eq!(Some(Entry::new_with_token("a", 1, "3096048bb3", 12)), ent.next_with_token("3096048bb3")); // different token, inc again
+    assert_eq!(Some(Entry::new("a", 1, Some("3096048bb3"), 12)), ent.next_with_token("3096048bb3")); // different token, inc again
     
     let ent = if let Some(nxt) = ent.next_with_token("3096048bb3") { nxt } else { ent };
     assert_eq!(None, ent.next_with_token("3096048bb3")); // same again

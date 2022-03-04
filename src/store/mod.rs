@@ -2,7 +2,7 @@ pub mod error;
 
 use bb8_postgres;
 use tokio_postgres;
-use futures::{pin_mut, StreamExt, TryStreamExt};
+use futures::{pin_mut, TryStreamExt};
 
 use crate::model::entry;
 
@@ -38,6 +38,13 @@ impl Store {
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
       )",
+      &[]
+    )
+    .await?;
+    
+    client.execute(
+      "INSERT INTO mn_api_key (id, key, secret) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA')
+       ON CONFLICT (id) DO NOTHING",
       &[]
     )
     .await?;
@@ -83,7 +90,7 @@ impl Store {
   pub async fn inc_entry(&self, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
-
+    
     let stream = tx.query_raw("
       SELECT key, token, value FROM mn_entry
       WHERE key = $1
@@ -92,18 +99,17 @@ impl Store {
     )
     .await?;
     pin_mut!(stream);
-
-    let row = match stream.try_next().await? {
-      Some(row) => row,
-      None => return Err(error::Error::NotFoundError),
+    
+    let entry = match stream.try_next().await? {
+      Some(row) => entry::Entry::unmarshal(&row)?,
+      None => entry::Entry::new(&key, 1, None, 0),
     };
     
-    let entry = entry::Entry::unmarshal(&row)?;
     if let Some(tok) = &token {
-      if let Some(cmp) = &entry.token {
-        if tok == cmp {
-          return Ok(entry);
-        }
+      if let Some(upd) = entry.next_with_token(tok) {
+        return Ok(upd);
+      }else{
+        return Ok(entry);
       }
     }
     
