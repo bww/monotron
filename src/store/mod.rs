@@ -93,7 +93,7 @@ impl Store {
     let creator_id: i64 = 1;
     
     let stream = tx.query_raw("
-      SELECT key, token, value FROM mn_entry
+      SELECT key, creator_id, token, value FROM mn_entry
       WHERE key = $1
       FOR UPDATE",
       &[&key]
@@ -121,7 +121,7 @@ impl Store {
     
     tx.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (key) DO UPDATE SET value = $4",
+      ON CONFLICT (key) DO UPDATE SET token = $3, value = $4",
       &[&key, &creator_id, &token, &update.value]
     )
     .await?;
