@@ -15,7 +15,7 @@ pub struct Generic {
 }
 
 impl Generic {
-  pub fn new(msg: &str) -> Generic {
+  pub fn _new(msg: &str) -> Generic {
     Generic{msg: msg.to_string()}
   }
 }

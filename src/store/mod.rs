@@ -65,7 +65,7 @@ impl Store {
     Ok(())
   }
   
-  pub async fn check(&self) -> Result<String, error::Error> {
+  pub async fn _check(&self) -> Result<String, error::Error> {
     let client = self.pool.get().await?;
     let row = client
       .query_one("SELECT $1::TEXT", &[&"Check"])
@@ -74,9 +74,9 @@ impl Store {
     Ok(val)
   }
   
-  pub async fn store_entry(&self, ent: &entry::Entry) -> Result<(), error::Error> {
+  pub async fn _store_entry(&self, ent: &entry::Entry) -> Result<(), error::Error> {
     let client = self.pool.get().await?;
-    let row = client.execute("
+    client.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
       ON CONFLICT (key) DO UPDATE SET creator_id = $2, token = $3, value = $4, updated_at = now()",
       &[
@@ -87,16 +87,33 @@ impl Store {
     Ok(())
   }
   
-  pub async fn inc_entry(&self, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+  pub async fn fetch_entry(&self, client_id: i64, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+    let mut client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT key, creator_id, token, value FROM mn_entry
+      WHERE key = $1 AND creator_id = $2
+      FOR UPDATE",
+      &[&key, &client_id]
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(entry::Entry::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
+  }
+  
+  pub async fn inc_entry(&self, client_id: i64, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
-    let creator_id: i64 = 1;
     
     let stream = tx.query_raw("
       SELECT key, creator_id, token, value FROM mn_entry
-      WHERE key = $1
+      WHERE key = $1 AND client_id = $2
       FOR UPDATE",
-      &[&key]
+      &[&key, &client_id]
     )
     .await?;
     pin_mut!(stream);
@@ -116,13 +133,10 @@ impl Store {
       entry.next()
     };
     
-    println!(">>> >> >>> {:?}", &entry);
-    println!("<<< << <<< {:?}", &update);
-    
     tx.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
       ON CONFLICT (key) DO UPDATE SET token = $3, value = $4",
-      &[&key, &creator_id, &token, &update.value]
+      &[&key, &client_id, &token, &update.value]
     )
     .await?;
     
