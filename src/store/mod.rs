@@ -90,6 +90,7 @@ impl Store {
   pub async fn inc_entry(&self, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
+    let creator_id: i64 = 1;
     
     let stream = tx.query_raw("
       SELECT key, token, value FROM mn_entry
@@ -115,14 +116,18 @@ impl Store {
       entry.next()
     };
     
-    tx.execute(
-      "UPDATE mn_entry SET value = $1 WHERE key = $2",
-      &[&entry.value, &key]
+    println!(">>> >> >>> {:?}", &entry);
+    println!("<<< << <<< {:?}", &update);
+    
+    tx.execute("
+      INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
+      ON CONFLICT (key) DO UPDATE SET value = $4",
+      &[&key, &creator_id, &token, &update.value]
     )
     .await?;
     
     tx.commit().await?;
-    Ok(entry)
+    Ok(update)
   }
   
 }

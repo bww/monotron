@@ -31,6 +31,7 @@ async fn main() -> Result<(), error::Error> {
 }
 
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
+  println!("*** {:?}", &err);
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
   } else if let Some(cause) = err.find::<store::error::Error>() {
