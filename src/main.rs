@@ -29,12 +29,11 @@ async fn main() -> Result<(), error::Error> {
       .recover(handle_rejection),
   );
   let puts = warp::put().and(
-    v1
-      .or(inc_entry)
+    inc_entry
       .recover(handle_rejection),
   );
   
-  warp::serve(gets.and(puts))
+  warp::serve(gets.or(puts))
     .run(([127, 0, 0, 1], 3030))
     .await;
   
@@ -45,18 +44,25 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
   println!("*** {:?}", &err);
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
-  } else if let Some(_cause) = err.find::<store::error::Error>() {
-    Ok(warp::reply::with_status("PERSISTENCE_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR))
+  } else if let Some(cause) = err.find::<store::error::Error>() {
+    handle_persist_error(cause)
   } else if let Some(cause) = err.find::<error::Error>() {
-    handle_error(cause)
+    handle_general_error(cause)
   }else{
     Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR))
   }
 }
 
-fn handle_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+fn handle_persist_error(err: &store::error::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
   match err {
-    error::Error::NotFoundError(err) => Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND)),
+    store::error::Error::NotFoundError => Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND)),
+    _ => Ok(warp::reply::with_status("PERSISTENCE_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
+  }
+}
+
+fn handle_general_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+  match err {
+    error::Error::NotFoundError(_) => Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND)),
     _ => Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
   }
 }

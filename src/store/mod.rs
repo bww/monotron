@@ -94,7 +94,10 @@ impl Store {
       SELECT key, creator_id, token, value FROM mn_entry
       WHERE key = $1 AND creator_id = $2
       FOR UPDATE",
-      &[&key, &client_id]
+      slice_iter(&[
+        &key,
+        &client_id,
+      ])
     )
     .await?;
     pin_mut!(stream);
@@ -111,9 +114,12 @@ impl Store {
     
     let stream = tx.query_raw("
       SELECT key, creator_id, token, value FROM mn_entry
-      WHERE key = $1 AND client_id = $2
+      WHERE key = $1 AND creator_id = $2
       FOR UPDATE",
-      &[&key, &client_id]
+      slice_iter(&[
+        &key,
+        &client_id,
+      ])
     )
     .await?;
     pin_mut!(stream);
@@ -136,7 +142,12 @@ impl Store {
     tx.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
       ON CONFLICT (key) DO UPDATE SET token = $3, value = $4",
-      &[&key, &client_id, &token, &update.value]
+      &[
+        &key,
+        &client_id,
+        &token,
+        &update.value,
+      ]
     )
     .await?;
     
@@ -144,4 +155,10 @@ impl Store {
     Ok(update)
   }
   
+}
+
+fn slice_iter<'a>(
+    s: &'a [&'a (dyn tokio_postgres::types::ToSql + Sync)],
+) -> impl ExactSizeIterator<Item = &'a dyn tokio_postgres::types::ToSql> + 'a {
+    s.iter().map(|s| *s as _)
 }
