@@ -27,7 +27,22 @@ impl ApiKey {
     Ok(ApiKey{
       id: row.try_get(0)?,
       key: row.try_get(1)?,
-      secret: row.try_get(1)?,
+      secret: row.try_get(2)?,
+    })
+  }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Authorization {
+  pub api_key: ApiKey,
+  pub account_id: i64,
+}
+
+impl Authorization {
+  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
+    Ok(Authorization{
+      api_key: ApiKey::unmarshal(row)?,
+      account_id: row.try_get(3)?,
     })
   }
 }

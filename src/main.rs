@@ -18,7 +18,7 @@ async fn main() -> Result<(), error::Error> {
     .and(store_filter.clone())
     .and_then(handle_v1);
   
-  let get_entry = warp::path!("v1" / String / String)
+  let get_entry = warp::path!("v1" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_get_entry);
@@ -72,9 +72,9 @@ fn handle_general_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'
   }
 }
 
-async fn handle_auth(store: store::Store) -> Result<apikey::ApiKey, warp::Rejection> {
-  match store.fetch_api_key("bootstrap".to_string(), "ztLvoY6IKyxA".to_string()).await {
-    Ok(key) => Ok(key),
+async fn handle_auth(store: store::Store) -> Result<apikey::Authorization, warp::Rejection> {
+  match store.fetch_authorization("bootstrap".to_string(), "ztLvoY6IKyxA".to_string()).await {
+    Ok(auth) => Ok(auth),
     Err(err) => match err {
       store::error::Error::NotFoundError => Err(error::Error::Unauthorized.into()),
       err => Err(err.into()),
@@ -86,16 +86,16 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
   Ok(warp::reply::with_status("API v1", http::StatusCode::OK))
 }
 
-async fn handle_get_entry(key: String, token: String, store: store::Store, apikey: apikey::ApiKey) -> Result<impl warp::Reply, warp::Rejection> {
-  let entry = match store.fetch_entry(apikey.id, key, Some(token)).await {
+async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  let entry = match store.fetch_entry(&auth, key).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
 
-async fn handle_inc_entry(key: String, token: String, store: store::Store, apikey: apikey::ApiKey) -> Result<impl warp::Reply, warp::Rejection> {
-  let entry = match store.inc_entry(apikey.id, key, Some(token)).await {
+async fn handle_inc_entry(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  let entry = match store.inc_entry(&auth, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };

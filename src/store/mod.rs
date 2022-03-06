@@ -32,12 +32,32 @@ impl Store {
     let client = self.pool.get().await?;
     
     client.execute(
+      "CREATE TABLE IF NOT EXISTS mn_account (
+         id         BIGSERIAL PRIMARY KEY,
+         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+      )",
+      &[]
+    )
+    .await?;
+    
+    client.execute(
       "CREATE TABLE IF NOT EXISTS mn_api_key (
          id         BIGSERIAL PRIMARY KEY,
          key        VARCHAR(256) NOT NULL UNIQUE,
          secret     VARCHAR(1024) NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+      )",
+      &[]
+    )
+    .await?;
+    
+    client.execute(
+      "CREATE TABLE IF NOT EXISTS mn_account_r_api_key (
+         account_id BIGINT NOT NULL REFERENCES mn_account (id),
+         api_key_id BIGINT NOT NULL REFERENCES mn_api_key (id),
+         PRIMARY KEY (account_id, api_key_id)
       )",
       &[]
     )
@@ -51,9 +71,23 @@ impl Store {
     .await?;
     
     client.execute(
+      "INSERT INTO mn_account (id) VALUES (1)
+       ON CONFLICT (id) DO NOTHING",
+      &[]
+    )
+    .await?;
+    
+    client.execute(
+      "INSERT INTO mn_account_r_api_key (account_id, api_key_id) VALUES (1, 1)
+       ON CONFLICT (account_id, api_key_id) DO NOTHING",
+      &[]
+    )
+    .await?;
+    
+    client.execute(
       "CREATE TABLE IF NOT EXISTS mn_entry (
          key        VARCHAR(256) NOT NULL,
-         creator_id BIGINT NOT NULL REFERENCES mn_api_key (id),
+         creator_id BIGINT NOT NULL REFERENCES mn_account (id),
          token      VARCHAR(256), -- nullable
          value      BIGINT NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -76,12 +110,13 @@ impl Store {
     Ok(val)
   }
   
-  pub async fn fetch_api_key(&self, key: String, secret: String) -> Result<apikey::ApiKey, error::Error> {
+  pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
     let mut client = self.pool.get().await?;
     
     let stream = client.query_raw("
-      SELECT id, key, secret FROM mn_api_key
-      WHERE key = $1 AND secret = $2",
+      SELECT k.id, k.key, k.secret, r.account_id FROM mn_api_key AS k
+      INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
+      WHERE k.key = $1 AND k.secret = $2",
       slice_iter(&[
         &key,
         &secret,
@@ -91,7 +126,7 @@ impl Store {
     pin_mut!(stream);
     
     match stream.try_next().await? {
-      Some(row) => Ok(apikey::ApiKey::unmarshal(&row)?),
+      Some(row) => Ok(apikey::Authorization::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
   }
@@ -109,7 +144,7 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_entry(&self, client_id: i64, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+  pub async fn fetch_entry(&self, auth: &apikey::Authorization, key: String) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     
     let stream = client.query_raw("
@@ -118,7 +153,7 @@ impl Store {
       FOR UPDATE",
       slice_iter(&[
         &key,
-        &client_id,
+        &auth.account_id,
       ])
     )
     .await?;
@@ -130,7 +165,7 @@ impl Store {
     }
   }
   
-  pub async fn inc_entry(&self, client_id: i64, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+  pub async fn inc_entry(&self, auth: &apikey::Authorization, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
@@ -140,7 +175,7 @@ impl Store {
       FOR UPDATE",
       slice_iter(&[
         &key,
-        &client_id,
+        &auth.account_id,
       ])
     )
     .await?;
@@ -166,7 +201,7 @@ impl Store {
       ON CONFLICT (key, creator_id) DO UPDATE SET token = $3, value = $4",
       &[
         &key,
-        &client_id,
+        &auth.account_id,
         &token,
         &update.value,
       ]
