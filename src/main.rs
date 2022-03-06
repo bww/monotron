@@ -3,6 +3,7 @@ mod store;
 mod model;
 
 use warp::{http, Filter};
+use crate::model::apikey;
 
 const CLIENT_ID: i64 = 1;
 
@@ -10,6 +11,10 @@ const CLIENT_ID: i64 = 1;
 async fn main() -> Result<(), error::Error> {
   let store = store::Store::new("localhost", "monotron_development").await?;
   let store_filter = warp::any().map(move || store.clone());
+
+  let auth_filter = warp::any()
+    .and(store_filter.clone())
+    .and_then(handle_auth);
   
   let v1 = warp::path!("v1")
     .and(store_filter.clone())
@@ -17,6 +22,7 @@ async fn main() -> Result<(), error::Error> {
   
   let get_entry = warp::path!("v1" / String / String)
     .and(store_filter.clone())
+    .and(auth_filter.clone())
     .and_then(handle_get_entry);
   
   let inc_entry = warp::path!("v1" / String / String)
@@ -67,11 +73,21 @@ fn handle_general_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'
   }
 }
 
+async fn handle_auth(store: store::Store) -> Result<apikey::ApiKey, warp::Rejection> {
+  match store.fetch_api_key("bootstrap".to_string(), "ztLvoY6IKyxA".to_string()).await {
+    Ok(key) => Ok(key),
+    Err(err) => match err {
+      store::error::Error::NotFoundError => Err(error::Error::Unauthorized.into()),
+      err => Err(err.into()),
+    }
+  }
+}
+
 async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
   Ok(warp::reply::with_status("API v1", http::StatusCode::OK))
 }
 
-async fn handle_get_entry(key: String, token: String, store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_get_entry(key: String, token: String, store: store::Store, apikey: apikey::ApiKey) -> Result<impl warp::Reply, warp::Rejection> {
   let entry = match store.fetch_entry(CLIENT_ID, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),

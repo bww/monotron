@@ -629,6 +629,7 @@ dependencies = [
  "bb8-postgres",
  "chrono",
  "futures",
+ "rand",
  "serde",
  "serde_json",
  "structopt",

@@ -5,6 +5,7 @@ use tokio_postgres;
 use futures::{pin_mut, TryStreamExt};
 
 use crate::model::entry;
+use crate::model::apikey;
 
 #[derive(Debug, Clone)]
 pub struct Store {
@@ -32,7 +33,7 @@ impl Store {
     
     client.execute(
       "CREATE TABLE IF NOT EXISTS mn_api_key (
-         id         SERIAL PRIMARY KEY,
+         id         BIGSERIAL PRIMARY KEY,
          key        VARCHAR(256) NOT NULL UNIQUE,
          secret     VARCHAR(1024) NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -72,6 +73,26 @@ impl Store {
       .await?;
     let val: String = row.get(0);
     Ok(val)
+  }
+  
+  pub async fn fetch_api_key(&self, key: String, secret: String) -> Result<apikey::ApiKey, error::Error> {
+    let mut client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT id, key, secret FROM mn_api_key
+      WHERE key = $1 AND secret = $2",
+      slice_iter(&[
+        &key,
+        &secret,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(apikey::ApiKey::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
   }
   
   pub async fn _store_entry(&self, ent: &entry::Entry) -> Result<(), error::Error> {
