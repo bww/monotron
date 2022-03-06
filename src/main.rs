@@ -5,8 +5,6 @@ mod model;
 use warp::{http, Filter};
 use crate::model::apikey;
 
-const CLIENT_ID: i64 = 1;
-
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
   let store = store::Store::new("localhost", "monotron_development").await?;
@@ -27,6 +25,7 @@ async fn main() -> Result<(), error::Error> {
   
   let inc_entry = warp::path!("v1" / String / String)
     .and(store_filter.clone())
+    .and(auth_filter.clone())
     .and_then(handle_inc_entry);
   
   let gets = warp::get().and(
@@ -88,15 +87,15 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
 }
 
 async fn handle_get_entry(key: String, token: String, store: store::Store, apikey: apikey::ApiKey) -> Result<impl warp::Reply, warp::Rejection> {
-  let entry = match store.fetch_entry(CLIENT_ID, key, Some(token)).await {
+  let entry = match store.fetch_entry(apikey.id, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
 
-async fn handle_inc_entry(key: String, token: String, store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
-  let entry = match store.inc_entry(CLIENT_ID, key, Some(token)).await {
+async fn handle_inc_entry(key: String, token: String, store: store::Store, apikey: apikey::ApiKey) -> Result<impl warp::Reply, warp::Rejection> {
+  let entry = match store.inc_entry(apikey.id, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };

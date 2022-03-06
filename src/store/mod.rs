@@ -52,12 +52,13 @@ impl Store {
     
     client.execute(
       "CREATE TABLE IF NOT EXISTS mn_entry (
-         key        VARCHAR(256) NOT NULL PRIMARY KEY,
+         key        VARCHAR(256) NOT NULL,
          creator_id BIGINT NOT NULL REFERENCES mn_api_key (id),
          token      VARCHAR(256), -- nullable
          value      BIGINT NOT NULL,
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+         PRIMARY KEY (key, creator_id)
       )",
       &[]
     )
@@ -99,7 +100,7 @@ impl Store {
     let client = self.pool.get().await?;
     client.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (key) DO UPDATE SET creator_id = $2, token = $3, value = $4, updated_at = now()",
+      ON CONFLICT (key, creator_id) DO UPDATE SET token = $3, value = $4, updated_at = now()",
       &[
         &ent.key, &ent.creator_id, &ent.token, &ent.value,
       ]
@@ -162,7 +163,7 @@ impl Store {
     
     tx.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (key) DO UPDATE SET token = $3, value = $4",
+      ON CONFLICT (key, creator_id) DO UPDATE SET token = $3, value = $4",
       &[
         &key,
         &client_id,
