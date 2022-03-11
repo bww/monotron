@@ -70,27 +70,27 @@ mod tests {
   
   #[test]
   fn next_unqualified() {
-    let ent = Entry::new("a", 1, 10);
-    assert_eq!(Entry::new("a", 1, 11), ent.next());
+    let ent = Entry::new("a", 0, None, 10);
+    assert_eq!(Entry::new("a", 0, None, 11), ent.next());
     
     let ent = ent.next();
-    assert_eq!(Entry::new("a", 1, 12), ent.next());
+    assert_eq!(Entry::new("a", 0, None, 12), ent.next());
     
     let ent = ent.next();
-    assert_eq!(Entry::new("a", 1, 13), ent.next());
+    assert_eq!(Entry::new("a", 0, None, 13), ent.next());
     
     let ent = ent.next();
-    assert_eq!(Entry::new("a", 1, 14), ent.next());
+    assert_eq!(Entry::new("a", 0, None, 14), ent.next());
   }
   
   #[test]
   fn next_with_token() {
-    let ent = Entry::new("a", 1, 10);
-    assert_eq!(Some(Entry::new("a", 1, Some("d261470109"), 11)), ent.next_with_token("d261470109"));
+    let ent = Entry::new("a", 0, None, 10);
+    assert_eq!(Some(Entry::new("a", 0, Some("d261470109".to_string()), 11)), ent.next_with_token("d261470109"));
     
     let ent = if let Some(nxt) = ent.next_with_token("d261470109") { nxt } else { ent };
     assert_eq!(None, ent.next_with_token("d261470109")); // no change, same token
-    assert_eq!(Some(Entry::new("a", 1, Some("3096048bb3"), 12)), ent.next_with_token("3096048bb3")); // different token, inc again
+    assert_eq!(Some(Entry::new("a", 0, Some("3096048bb3".to_string()), 12)), ent.next_with_token("3096048bb3")); // different token, inc again
     
     let ent = if let Some(nxt) = ent.next_with_token("3096048bb3") { nxt } else { ent };
     assert_eq!(None, ent.next_with_token("3096048bb3")); // same again

@@ -8,6 +8,7 @@ use xid;
 use warp;
 
 use crate::store;
+use crate::model;
 
 #[derive(Debug)]
 pub struct Generic {
@@ -15,7 +16,7 @@ pub struct Generic {
 }
 
 impl Generic {
-  pub fn _new(msg: &str) -> Generic {
+  pub fn new(msg: &str) -> Generic {
     Generic{msg: msg.to_string()}
   }
 }
@@ -36,6 +37,7 @@ impl fmt::Display for Generic {
 pub enum Error {
   Generic(Generic),
   StoreError(store::error::Error),
+  ScopeError(model::scope::Error),
   NotFoundError(store::error::Error),
   Unauthorized,
   IOError(io::Error),
@@ -58,6 +60,12 @@ impl From<store::error::Error> for Error {
       store::error::Error::NotFoundError => Self::NotFoundError(error),
       other => Self::StoreError(other),
     }
+  }
+}
+
+impl From<model::scope::Error> for Error {
+  fn from(error: model::scope::Error) -> Self {
+    Self::ScopeError(error)
   }
 }
 
@@ -90,6 +98,7 @@ impl fmt::Display for Error {
     match self {
       Self::Generic(err) => err.fmt(f),
       Self::StoreError(err) => err.fmt(f),
+      Self::ScopeError(err) => err.fmt(f),
       Self::NotFoundError(err) => err.fmt(f),
       Self::Unauthorized => f.write_str("Unauthorized"),
       Self::IOError(err) => err.fmt(f),

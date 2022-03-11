@@ -14,8 +14,8 @@ pub struct Store {
 
 impl Store {
   
-  pub async fn new(host: &str, db: &str) -> Result<Store, error::Error> {
-    let config: tokio_postgres::config::Config = str::parse(&format!("postgresql://postgres@{}/{}", host, db))?;
+  pub async fn new(dsn: &str) -> Result<Store, error::Error> {
+    let config: tokio_postgres::config::Config = str::parse(dsn)?;
     let manager = bb8_postgres::PostgresConnectionManager::new(config, tokio_postgres::NoTls);
     let pool = bb8::Pool::builder()
       .max_size(15)
@@ -46,6 +46,7 @@ impl Store {
          id         BIGSERIAL PRIMARY KEY,
          key        VARCHAR(256) NOT NULL UNIQUE,
          secret     VARCHAR(1024) NOT NULL,
+         scopes     VARCHAR(64)[],
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
       )",

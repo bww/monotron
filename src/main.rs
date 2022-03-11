@@ -3,13 +3,25 @@ mod store;
 mod model;
 
 use warp::{http, Filter};
+use envconfig::Envconfig;
 use crate::model::apikey;
+
+#[derive(Envconfig)]
+pub struct Config {
+  #[envconfig(from = "DB_DSN", default = "postgresql://postgres@localhost/monotron_development?connect_timeout=5")]
+  pub db_dsn: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
-  let store = store::Store::new("localhost", "monotron_development").await?;
+  let conf = match Config::init_from_env() {
+    Ok(conf) => conf,
+    Err(err) => panic!("*** Could not load configuration from environment: {}", err),
+  };
+  
+  let store = store::Store::new(&conf.db_dsn).await?;
   let store_filter = warp::any().map(move || store.clone());
-
+  
   let auth_filter = warp::any()
     .and(store_filter.clone())
     .and_then(handle_auth);
