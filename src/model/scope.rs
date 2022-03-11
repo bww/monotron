@@ -5,7 +5,7 @@ use tokio_postgres;
 
 use crate::error;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
   MalformedScope(String),
   InvalidOperation(String),
@@ -28,16 +28,16 @@ pub enum Operation {
 }
 
 impl Operation {
-  pub fn parse(s: &str) -> Result<Operation, error::Error> {
+  pub fn parse(s: &str) -> Result<Operation, Error> {
     match s.trim().to_lowercase().as_ref() {
       "read"   => Ok(Operation::Read),
       "write"  => Ok(Operation::Write),
       "delete" => Ok(Operation::Delete),
-      _        => Err(Error::InvalidOperation(format!("Invalid operation: {}", s)).into()),
+      _        => Err(Error::InvalidOperation(format!("Invalid operation: {}", s))),
     }
   }
 
-  pub fn parse_list(s: &str) -> Result<Vec<Operation>, error::Error> {
+  pub fn parse_list(s: &str) -> Result<Vec<Operation>, Error> {
     let mut ops = Vec::new();
     for e in s.split(',') {
       ops.push(Self::parse(e)?);
@@ -63,11 +63,11 @@ pub enum Resource {
 }
 
 impl Resource {
-  pub fn parse(s: &str) -> Result<Resource, error::Error> {
+  pub fn parse(s: &str) -> Result<Resource, Error> {
     match s.trim().to_lowercase().as_ref() {
       "system" => Ok(Resource::System),
       "entry"  => Ok(Resource::Entry),
-      _        => Err(Error::InvalidResource(format!("Invalid resource: {}", s)).into()),
+      _        => Err(Error::InvalidResource(format!("Invalid resource: {}", s))),
     }
   }
 }
@@ -95,10 +95,10 @@ impl Scope {
     }
   }
   
-  pub fn parse(s: &str) -> Result<Scope, error::Error> {
+  pub fn parse(s: &str) -> Result<Scope, Error> {
     let f: Vec<&str> = s.split(':').collect();
     if f.len() != 2 {
-      return Err(Error::MalformedScope(format!("Invalid resource: {}", s)).into());
+      return Err(Error::MalformedScope(format!("Invalid resource: {}", s)));
     }
     Ok(Scope{
       ops: Operation::parse_list(f[0])?,
@@ -113,7 +113,10 @@ mod tests {
   
   #[test]
   fn parse_source() {
-    assert_eq!(Scope::new(Operation::Read, Resource::System), Scope::parse("read:system").unwrap());
+    assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("read:system"));
+    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}), Scope::parse("read,write:system"));
+    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}), Scope::parse("read,write,delete:system"));
+    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}), Scope::parse("read,write,delete:entry"));
   }
   
 }
