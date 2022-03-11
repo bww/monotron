@@ -110,13 +110,28 @@ impl Scope {
   }
 }
 
+impl fmt::Display for Scope {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let ops: Vec<String> = self.ops.iter().map(|e| e.to_string()).collect();
+    write!(f, "{}:{}", ops.join(","), self.resource)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
   
   #[test]
+  fn format_source() {
+    assert_eq!("read:system".to_string(), Scope{ops: vec!(Operation::Read), resource: Resource::System}.to_string());
+    assert_eq!("read,write:system".to_string(), Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}.to_string());
+    assert_eq!("read,write,delete:system".to_string(), Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}.to_string());
+  }
+  
+  #[test]
   fn parse_source() {
     assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("read:system"));
+    assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("READ:SYSTEM"));
     assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("read : system"));
     assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}), Scope::parse("read,write:system"));
     assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}), Scope::parse("read , write : system"));
