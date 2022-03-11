@@ -15,9 +15,9 @@ pub enum Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Self::MalformedScope(msg) => write!(f, "malformed scope: {}", msg),
-      Self::InvalidOperation(msg) => write!(f, "invalid operation: {}", msg),
-      Self::InvalidResource(msg) => write!(f, "invalid resource: {}", msg),
+      Self::MalformedScope(msg) => write!(f, "Malformed scope: {}", msg),
+      Self::InvalidOperation(msg) => write!(f, "Invalid operation: {}", msg),
+      Self::InvalidResource(msg) => write!(f, "Invalid resource: {}", msg),
     }
   }
 }
@@ -33,7 +33,7 @@ impl Operation {
       "read"   => Ok(Operation::Read),
       "write"  => Ok(Operation::Write),
       "delete" => Ok(Operation::Delete),
-      _        => Err(Error::InvalidOperation(format!("Invalid operation: {}", s))),
+      _        => Err(Error::InvalidOperation(format!("Invalid operation: {:?}", s))),
     }
   }
 
@@ -67,7 +67,7 @@ impl Resource {
     match s.trim().to_lowercase().as_ref() {
       "system" => Ok(Resource::System),
       "entry"  => Ok(Resource::Entry),
-      _        => Err(Error::InvalidResource(format!("Invalid resource: {}", s))),
+      _        => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
     }
   }
 }
@@ -96,9 +96,9 @@ impl Scope {
   }
   
   pub fn parse(s: &str) -> Result<Scope, Error> {
-    let f: Vec<&str> = s.split(':').collect();
+    let f: Vec<&str> = s.trim().split(':').collect();
     if f.len() != 2 {
-      return Err(Error::MalformedScope(format!("Invalid resource: {}", s)));
+      return Err(Error::MalformedScope(format!("Malformed scope: {:?}", s)));
     }
     Ok(Scope{
       ops: Operation::parse_list(f[0])?,
@@ -114,9 +114,21 @@ mod tests {
   #[test]
   fn parse_source() {
     assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("read:system"));
+    assert_eq!(Ok(Scope::new(Operation::Read, Resource::System)), Scope::parse("read : system"));
     assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}), Scope::parse("read,write:system"));
+    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write), resource: Resource::System}), Scope::parse("read , write : system"));
     assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}), Scope::parse("read,write,delete:system"));
-    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}), Scope::parse("read,write,delete:entry"));
+    assert_eq!(Ok(Scope{ops: vec!(Operation::Read, Operation::Write, Operation::Delete), resource: Resource::System}), Scope::parse(" read , write , delete : system "));
+    
+    assert_eq!(Err(Error::MalformedScope("Malformed scope: \"\"".to_string())), Scope::parse(""));
+    assert_eq!(Err(Error::MalformedScope("Malformed scope: \"foo\"".to_string())), Scope::parse("foo"));
+    assert_eq!(Err(Error::InvalidOperation("Invalid operation: \"foo\"".to_string())), Scope::parse("foo:bar"));
+    assert_eq!(Err(Error::InvalidResource("Invalid resource: \"bar\"".to_string())), Scope::parse("read:bar"));
+    assert_eq!(Err(Error::InvalidOperation("Invalid operation: \"\"".to_string())), Scope::parse("read,:bar"));
+    assert_eq!(Err(Error::InvalidOperation("Invalid operation: \"foo\"".to_string())), Scope::parse("read,foo:bar"));
+    assert_eq!(Err(Error::InvalidResource("Invalid resource: \"bar\"".to_string())), Scope::parse("read,write:bar"));
+    assert_eq!(Err(Error::MalformedScope("Malformed scope: \"read,write\"".to_string())), Scope::parse("read,write"));
+    assert_eq!(Err(Error::InvalidResource("Invalid resource: \"\"".to_string())), Scope::parse("read,write: "));
   }
   
 }
