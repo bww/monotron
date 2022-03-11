@@ -59,6 +59,7 @@ impl fmt::Display for Operation {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Resource {
   System,
+  ACL,
   Entry,
 }
 
@@ -66,6 +67,7 @@ impl Resource {
   pub fn parse(s: &str) -> Result<Resource, Error> {
     match s.trim().to_lowercase().as_ref() {
       "system" => Ok(Resource::System),
+      "acl"    => Ok(Resource::ACL),
       "entry"  => Ok(Resource::Entry),
       _        => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
     }
@@ -76,6 +78,7 @@ impl fmt::Display for Resource {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Resource::System => write!(f, "system"),
+      Resource::ACL    => write!(f, "acl"),
       Resource::Entry  => write!(f, "entry"),
     }
   }
