@@ -1,7 +1,10 @@
 use std::str;
 use std::fmt;
+use bytes;
 
+use postgres::types;
 use tokio_postgres;
+use tokio_postgres::types::to_sql_checked;
 
 use crate::error;
 
@@ -110,6 +113,29 @@ impl Scope {
   }
 }
 
+impl tokio_postgres::types::ToSql for Scope {
+   fn to_sql(&self, sqltype: &tokio_postgres::types::Type, out: &mut bytes::BytesMut) -> Result<tokio_postgres::types::IsNull, Box<dyn std::error::Error + 'static + Send + Sync>> {
+    match *sqltype {
+      postgres::types::TEXT  |
+      postgres::types::BYTEA |
+      postgres::types::VARCHAR => {},
+      _ => return Err(format!("Unsupported type: {}", sqltype).into()),
+    };
+    out.extend_from_slice(self.to_string().as_bytes());
+    Ok(tokio_postgres::types::IsNull::No)
+  }
+  
+  fn accepts(sqltype: &Type) -> bool {
+    match *sqltype {
+      postgres::types::TEXT  |
+      postgres::types::BYTEA |
+      postgres::types::VARCHAR => true,
+      _ => false,
+    };
+  }
+  
+  to_sql_checked!();
+}
 impl fmt::Display for Scope {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let ops: Vec<String> = self.ops.iter().map(|e| e.to_string()).collect();

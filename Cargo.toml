@@ -4,12 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-structopt = "0.3"
 rand = "0.8"
-chrono = "0.4"
+bytes = "1.1"
 xid = "1.0"
 url = "2.2"
+chrono = "0.4"
 futures = "0.3"
+structopt = "0.3"
 tokio = { version = "1", features = ["full"] }
 tokio-postgres = "0.7.5"
 warp = "0.3"
