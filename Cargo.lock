@@ -645,6 +645,7 @@ dependencies = [
 name = "monotron"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "bb8",
  "bb8-postgres",
  "bytes",

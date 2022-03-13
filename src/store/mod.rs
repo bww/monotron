@@ -65,7 +65,7 @@ impl Store {
     .await?;
     
     client.execute(
-      "INSERT INTO mn_api_key (id, key, secret, scopes) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA', ARRAY['*:system'])
+      "INSERT INTO mn_api_key (id, key, secret, scopes) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA', ARRAY['*:system','*:entry'])
        ON CONFLICT (id) DO NOTHING",
       &[]
     )

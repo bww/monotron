@@ -6,6 +6,8 @@ use warp::{http, Filter};
 use envconfig::Envconfig;
 use crate::model::apikey;
 
+const HEADER_AUTHORIZATION: &str = "Authorization";
+
 #[derive(Envconfig)]
 pub struct Config {
   #[envconfig(from = "DB_DSN", default = "postgresql://postgres@localhost/monotron_development?connect_timeout=5")]
@@ -24,6 +26,7 @@ async fn main() -> Result<(), error::Error> {
   
   let auth_filter = warp::any()
     .and(store_filter.clone())
+    .and(warp::header::<String>(HEADER_AUTHORIZATION))
     .and_then(handle_auth);
   
   let v1 = warp::path!("v1")
@@ -61,8 +64,12 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
   println!("*** {:?}", &err);
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
+  } else if let Some(cause) = err.find::<warp::reject::MissingHeader>() {
+    handle_missing_header(cause)
   } else if let Some(cause) = err.find::<model::scope::Error>() {
     handle_scope_error(cause)
+  } else if let Some(cause) = err.find::<model::apikey::Error>() {
+    handle_apikey_error(cause)
   } else if let Some(cause) = err.find::<store::error::Error>() {
     handle_persist_error(cause)
   } else if let Some(cause) = err.find::<error::Error>() {
@@ -72,9 +79,23 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
   }
 }
 
+fn handle_missing_header(err: &warp::reject::MissingHeader) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+  match err.name() {
+    HEADER_AUTHORIZATION => Ok(warp::reply::with_status("UNAUTHORIZED", http::StatusCode::UNAUTHORIZED)),
+    _ => Ok(warp::reply::with_status("MISSING_HEADER", http::StatusCode::BAD_REQUEST)),
+  }
+}
+
 fn handle_scope_error(err: &model::scope::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
   match err {
-    model::scope::Error::AccessDenied(_) => Ok(warp::reply::with_status("FORBIDDEN", http::StatusCode::FORBIDDEN)),
+    _ => Ok(warp::reply::with_status("ACL_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
+  }
+}
+
+fn handle_apikey_error(err: &model::apikey::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+  match err {
+    model::apikey::Error::Unauthorized(_) => Ok(warp::reply::with_status("UNAUTHORIZED", http::StatusCode::UNAUTHORIZED)),
+    model::apikey::Error::Forbidden(_) => Ok(warp::reply::with_status("FORBIDDEN", http::StatusCode::FORBIDDEN)),
     _ => Ok(warp::reply::with_status("ACL_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
   }
 }
@@ -89,17 +110,19 @@ fn handle_persist_error(err: &store::error::Error) -> Result<warp::reply::WithSt
 fn handle_general_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
   match err {
     error::Error::NotFoundError(_) => Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND)),
+    error::Error::DecodeBase64Error(_) => Ok(warp::reply::with_status("BAD_REQUEST", http::StatusCode::BAD_REQUEST)),
     _ => Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
   }
 }
 
-async fn handle_auth(store: store::Store) -> Result<apikey::Authorization, warp::Rejection> {
-  match store.fetch_authorization("bootstrap".to_string(), "ztLvoY6IKyxA".to_string()).await {
+async fn handle_auth(store: store::Store, header: String) -> Result<apikey::Authorization, warp::Rejection> {
+  let (key, secret) = model::apikey::parse_apikey(&header)?;
+  match store.fetch_authorization(key, secret).await {
     Ok(auth) => Ok(auth),
     Err(err) => match err {
-      store::error::Error::NotFoundError => Err(error::Error::Unauthorized.into()),
+      store::error::Error::NotFoundError => Err(model::apikey::Error::Unauthorized("Invalid API Key".to_string()).into()),
       err => Err(err.into()),
-    }
+    },
   }
 }
 
@@ -108,6 +131,7 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
 }
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(model::scope::Operation::Read, model::scope::Resource::Entry)?;
   let entry = match store.fetch_entry(&auth, key).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
@@ -116,6 +140,7 @@ async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Author
 }
 
 async fn handle_inc_entry(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(model::scope::Operation::Write, model::scope::Resource::Entry)?;
   let entry = match store.inc_entry(&auth, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),

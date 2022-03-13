@@ -13,7 +13,6 @@ pub enum Error {
   MalformedScope(String),
   InvalidOperation(String),
   InvalidResource(String),
-  AccessDenied(String),
 }
 
 impl warp::reject::Reject for Error {}
@@ -24,12 +23,11 @@ impl fmt::Display for Error {
       Self::MalformedScope(msg) => write!(f, "Malformed scope: {}", msg),
       Self::InvalidOperation(msg) => write!(f, "Invalid operation: {}", msg),
       Self::InvalidResource(msg) => write!(f, "Invalid resource: {}", msg),
-      Self::AccessDenied(msg) => write!(f, "Insufficient access for resource: {}", msg),
     }
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
   Read, Write, Delete, Every,
 }
@@ -65,7 +63,7 @@ impl fmt::Display for Operation {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Resource {
   System,
   ACL,
@@ -128,6 +126,17 @@ impl Scope {
     }
     Ok(res)
   }
+  
+  pub fn allows(&self, op: Operation, rc: Resource) -> bool {
+    if self.resource == rc {
+      for e in &self.ops {
+        if *e == op || *e == Operation::Every {
+          return true;
+        }
+      }
+    }
+    false
+  }
 }
 
 impl<'a> tokio_postgres::types::FromSql<'a> for Scope {
@@ -182,10 +191,36 @@ impl tokio_postgres::types::ToSql for Scope {
   
   to_sql_checked!();
 }
+
 impl fmt::Display for Scope {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let ops: Vec<String> = self.ops.iter().map(|e| e.to_string()).collect();
     write!(f, "{}:{}", ops.join(","), self.resource)
+  }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Scopes(Vec<Scope>);
+
+impl Scopes {
+  pub fn new(s: Vec<Scope>) -> Scopes {
+    Scopes(s)
+  }
+  
+  pub fn allows(&self, op: Operation, rc: Resource) -> bool {
+    for s in &self.0 {
+      if s.allows(op, rc) {
+        return true;
+      }
+    }
+    false
+  }
+}
+
+impl fmt::Display for Scopes {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let s: Vec<String> = self.0.iter().map(|e| e.to_string()).collect();
+    write!(f, "{}", s.join("; "))
   }
 }
 
