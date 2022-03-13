@@ -33,12 +33,12 @@ async fn main() -> Result<(), error::Error> {
     .and(store_filter.clone())
     .and_then(handle_v1);
   
-  let get_entry = warp::path!("v1" / "entry" / String)
+  let get_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_get_entry);
   
-  let inc_entry = warp::path!("v1" / "entry" / String / String)
+  let inc_entry = warp::path!("v1" / "series" / String / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_inc_entry);
