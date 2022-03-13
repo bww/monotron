@@ -12,6 +12,7 @@ chrono = "0.4"
 futures = "0.3"
 structopt = "0.3"
 tokio = { version = "1", features = ["full"] }
+postgres = "0.19"
 tokio-postgres = "0.7.5"
 warp = "0.3"
 bb8 = "0.7"

@@ -1,7 +1,8 @@
-use crate::store;
-
 use rand::{self, Rng};
 use tokio_postgres;
+
+use crate::store;
+use crate::model::scope;
 
 fn random_string(len: usize) -> String {
   rand::thread_rng()
@@ -20,14 +21,23 @@ pub struct ApiKey {
   pub id: i64,
   pub key: String,
   pub secret: String,
+  pub scopes: Vec<scope::Scope>,
 }
 
 impl ApiKey {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<ApiKey, store::error::Error> {
+    let scope_specs: Vec<String> = row.try_get(3)?;
+    let scopes: Vec<scope::Scope> = if scope_specs.len() > 0 {
+      scope::Scope::parse_set(scope_specs)?
+    }else{
+      Vec::new()
+    };
+    println!(">>> SCOPES {:?}", scopes);
     Ok(ApiKey{
       id: row.try_get(0)?,
       key: row.try_get(1)?,
       secret: row.try_get(2)?,
+      scopes: scopes,
     })
   }
 }
@@ -42,7 +52,7 @@ impl Authorization {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
     Ok(Authorization{
       api_key: ApiKey::unmarshal(row)?,
-      account_id: row.try_get(3)?,
+      account_id: row.try_get(4)?,
     })
   }
 }

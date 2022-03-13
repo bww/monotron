@@ -61,12 +61,21 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
   println!("*** {:?}", &err);
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
+  } else if let Some(cause) = err.find::<model::scope::Error>() {
+    handle_scope_error(cause)
   } else if let Some(cause) = err.find::<store::error::Error>() {
     handle_persist_error(cause)
   } else if let Some(cause) = err.find::<error::Error>() {
     handle_general_error(cause)
   }else{
     Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR))
+  }
+}
+
+fn handle_scope_error(err: &model::scope::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+  match err {
+    model::scope::Error::AccessDenied(_) => Ok(warp::reply::with_status("FORBIDDEN", http::StatusCode::FORBIDDEN)),
+    _ => Ok(warp::reply::with_status("ACL_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
   }
 }
 

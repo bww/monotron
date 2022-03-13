@@ -6,6 +6,8 @@ use bb8;
 use warp;
 use tokio_postgres;
 
+use crate::model;
+
 #[derive(Debug)]
 pub enum Error {
   GenericError,
@@ -14,6 +16,7 @@ pub enum Error {
   IOError(io::Error),
   PostgresError(tokio_postgres::Error),
   ConnectionError(bb8::RunError<tokio_postgres::Error>),
+  ScopeError(model::scope::Error),
 }
 
 impl warp::reject::Reject for Error {}
@@ -42,6 +45,12 @@ impl From<bb8::RunError<tokio_postgres::Error>> for Error {
   }
 }
 
+impl From<model::scope::Error> for Error {
+  fn from(error: model::scope::Error) -> Self {
+    Self::ScopeError(error)
+  }
+}
+
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
@@ -51,6 +60,7 @@ impl fmt::Display for Error {
       Self::IOError(err) => err.fmt(f),
       Self::PostgresError(err) => err.fmt(f),
       Self::ConnectionError(err) => err.fmt(f),
+      Self::ScopeError(err) => err.fmt(f),
     }
   }
 }

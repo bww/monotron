@@ -1,19 +1,22 @@
 use std::str;
 use std::fmt;
+use std::iter;
 use bytes;
 
-use postgres::types;
+use warp;
+use postgres;
 use tokio_postgres;
 use tokio_postgres::types::to_sql_checked;
-
-use crate::error;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
   MalformedScope(String),
   InvalidOperation(String),
   InvalidResource(String),
+  AccessDenied(String),
 }
+
+impl warp::reject::Reject for Error {}
 
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -21,13 +24,14 @@ impl fmt::Display for Error {
       Self::MalformedScope(msg) => write!(f, "Malformed scope: {}", msg),
       Self::InvalidOperation(msg) => write!(f, "Invalid operation: {}", msg),
       Self::InvalidResource(msg) => write!(f, "Invalid resource: {}", msg),
+      Self::AccessDenied(msg) => write!(f, "Insufficient access for resource: {}", msg),
     }
   }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
-  Read, Write, Delete,
+  Read, Write, Delete, Every,
 }
 
 impl Operation {
@@ -36,6 +40,7 @@ impl Operation {
       "read"   => Ok(Operation::Read),
       "write"  => Ok(Operation::Write),
       "delete" => Ok(Operation::Delete),
+      "*"      => Ok(Operation::Every),
       _        => Err(Error::InvalidOperation(format!("Invalid operation: {:?}", s))),
     }
   }
@@ -55,6 +60,7 @@ impl fmt::Display for Operation {
       Operation::Read   => write!(f, "read"),
       Operation::Write  => write!(f, "write"),
       Operation::Delete => write!(f, "delete"),
+      Operation::Every  => write!(f, "*"),
     }
   }
 }
@@ -111,27 +117,67 @@ impl Scope {
       resource: Resource::parse(f[1])?,
     })
   }
+  
+  pub fn parse_set<T>(s: T) -> Result<Vec<Scope>, Error> 
+  where
+    T: iter::IntoIterator<Item = String>,
+  {
+    let mut res: Vec<Scope> = Vec::new();
+    for e in s {
+      res.push(Self::parse(&e)?);
+    }
+    Ok(res)
+  }
+}
+
+impl<'a> tokio_postgres::types::FromSql<'a> for Scope {
+  fn from_sql<'b>(sqltype: &postgres::types::Type, raw: &'a [u8]) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
+    match *sqltype {
+      postgres::types::Type::TEXT  |
+      postgres::types::Type::BYTEA |
+      postgres::types::Type::VARCHAR => Ok(
+        match Scope::parse(str::from_utf8(raw)?) {
+          Ok(scope) => scope,
+          Err(err) => return Err(format!("Cannot parse scope: {}", err).into()),
+        }
+      ),
+      _ => Err(format!("Cannot convert scope from {}", sqltype).into()),
+    }
+  }
+  
+  fn accepts(sqltype: &postgres::types::Type) -> bool {
+    match *sqltype {
+      postgres::types::Type::TEXT  |
+      postgres::types::Type::BYTEA |
+      postgres::types::Type::VARCHAR => true,
+      _ => false,
+    }
+  }
+  
+  fn from_sql_null(sqltype: &postgres::types::Type) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
+    Err("Scope cannot be null".to_string().into())
+  }
 }
 
 impl tokio_postgres::types::ToSql for Scope {
-   fn to_sql(&self, sqltype: &tokio_postgres::types::Type, out: &mut bytes::BytesMut) -> Result<tokio_postgres::types::IsNull, Box<dyn std::error::Error + 'static + Send + Sync>> {
+   fn to_sql(&self, sqltype: &postgres::types::Type, out: &mut bytes::BytesMut) -> Result<tokio_postgres::types::IsNull, Box<dyn std::error::Error + 'static + Send + Sync>> {
     match *sqltype {
-      postgres::types::TEXT  |
-      postgres::types::BYTEA |
-      postgres::types::VARCHAR => {},
+      postgres::types::Type::TEXT  |
+      postgres::types::Type::BYTEA |
+      postgres::types::Type::VARCHAR => {},
       _ => return Err(format!("Unsupported type: {}", sqltype).into()),
     };
     out.extend_from_slice(self.to_string().as_bytes());
     Ok(tokio_postgres::types::IsNull::No)
   }
   
-  fn accepts(sqltype: &Type) -> bool {
+  fn accepts(sqltype: &postgres::types::Type) -> bool {
     match *sqltype {
-      postgres::types::TEXT  |
-      postgres::types::BYTEA |
-      postgres::types::VARCHAR => true,
+      postgres::types::Type::TEXT  |
+      postgres::types::Type::BYTEA |
+      postgres::types::Type::VARCHAR => true,
       _ => false,
-    };
+    }
   }
   
   to_sql_checked!();

@@ -65,7 +65,7 @@ impl Store {
     .await?;
     
     client.execute(
-      "INSERT INTO mn_api_key (id, key, secret) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA')
+      "INSERT INTO mn_api_key (id, key, secret, scopes) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA', ARRAY['*:system'])
        ON CONFLICT (id) DO NOTHING",
       &[]
     )
@@ -115,7 +115,7 @@ impl Store {
     let mut client = self.pool.get().await?;
     
     let stream = client.query_raw("
-      SELECT k.id, k.key, k.secret, r.account_id FROM mn_api_key AS k
+      SELECT k.id, k.key, k.secret, k.scopes, r.account_id FROM mn_api_key AS k
       INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
       WHERE k.key = $1 AND k.secret = $2",
       slice_iter(&[
