@@ -98,13 +98,6 @@ pub struct Scope {
 }
 
 impl Scope {
-  pub fn new(op: Operation, rc: Resource) -> Scope {
-    Scope{
-      ops: vec!(op),
-      resource: rc,
-    }
-  }
-  
   pub fn parse(s: &str) -> Result<Scope, Error> {
     let f: Vec<&str> = s.trim().split(':').collect();
     if f.len() != 2 {
@@ -163,7 +156,7 @@ impl<'a> tokio_postgres::types::FromSql<'a> for Scope {
     }
   }
   
-  fn from_sql_null(sqltype: &postgres::types::Type) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
+  fn from_sql_null(_: &postgres::types::Type) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
     Err("Scope cannot be null".to_string().into())
   }
 }

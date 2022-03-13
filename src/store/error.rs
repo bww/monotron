@@ -10,7 +10,6 @@ use crate::model;
 
 #[derive(Debug)]
 pub enum Error {
-  GenericError,
   NotFoundError,
   URLParseError(url::ParseError),
   IOError(io::Error),
@@ -54,7 +53,6 @@ impl From<model::scope::Error> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Self::GenericError => "generic_error".fmt(f),
       Self::NotFoundError => "not_found".fmt(f),
       Self::URLParseError(err) => err.fmt(f),
       Self::IOError(err) => err.fmt(f),

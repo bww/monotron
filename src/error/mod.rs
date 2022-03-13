@@ -1,7 +1,6 @@
 use std::io;
 use std::fmt;
 use std::num;
-use std::error;
 
 use url;
 use xid;
@@ -12,31 +11,7 @@ use crate::store;
 use crate::model;
 
 #[derive(Debug)]
-pub struct Generic {
-  msg: String,
-}
-
-impl Generic {
-  pub fn new(msg: &str) -> Generic {
-    Generic{msg: msg.to_string()}
-  }
-}
-
-impl error::Error for Generic {
-  fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    None
-  }
-}
-
-impl fmt::Display for Generic {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}", self.msg)
-  }
-}
-
-#[derive(Debug)]
 pub enum Error {
-  Generic(Generic),
   StoreError(store::error::Error),
   ScopeError(model::scope::Error),
   ApiKeyError(model::apikey::Error),
@@ -50,12 +25,6 @@ pub enum Error {
 }
 
 impl warp::reject::Reject for Error {}
-
-impl From<Generic> for Error {
-  fn from(error: Generic) -> Self {
-    Self::Generic(error)
-  }
-}
 
 impl From<store::error::Error> for Error {
   fn from(error: store::error::Error) -> Self {
@@ -117,7 +86,6 @@ impl From<base64::DecodeError> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Self::Generic(err) => err.fmt(f),
       Self::StoreError(err) => err.fmt(f),
       Self::ScopeError(err) => err.fmt(f),
       Self::ApiKeyError(err) => err.fmt(f),

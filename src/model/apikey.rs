@@ -50,7 +50,7 @@ fn random_string(len: usize) -> String {
     .collect()
 }
 
-pub fn gen_apikey(len: usize) -> (String, String) {
+pub fn gen_apikey() -> (String, String) {
   (random_string(24), random_string(128))
 }
 
@@ -109,7 +109,7 @@ impl ApiKey {
     if self.allows(op, rc) {
       Ok(())
     }else{
-      Err(Error::Unauthorized(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
+      Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
     }
   }
 }

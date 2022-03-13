@@ -112,7 +112,7 @@ impl Store {
   }
   
   pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
-    let mut client = self.pool.get().await?;
+    let client = self.pool.get().await?;
     
     let stream = client.query_raw("
       SELECT k.id, k.key, k.secret, k.scopes, r.account_id FROM mn_api_key AS k
@@ -146,7 +146,7 @@ impl Store {
   }
   
   pub async fn fetch_entry(&self, auth: &apikey::Authorization, key: String) -> Result<entry::Entry, error::Error> {
-    let mut client = self.pool.get().await?;
+    let client = self.pool.get().await?;
     
     let stream = client.query_raw("
       SELECT key, creator_id, token, value FROM mn_entry
