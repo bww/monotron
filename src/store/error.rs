@@ -6,6 +6,7 @@ use bb8;
 use warp;
 use tokio_postgres;
 
+use crate::acl;
 use crate::model;
 
 #[derive(Debug)]
@@ -15,7 +16,7 @@ pub enum Error {
   IOError(io::Error),
   PostgresError(tokio_postgres::Error),
   ConnectionError(bb8::RunError<tokio_postgres::Error>),
-  ScopeError(model::scope::Error),
+  ScopeError(acl::scope::Error),
 }
 
 impl warp::reject::Reject for Error {}
@@ -44,8 +45,8 @@ impl From<bb8::RunError<tokio_postgres::Error>> for Error {
   }
 }
 
-impl From<model::scope::Error> for Error {
-  fn from(error: model::scope::Error) -> Self {
+impl From<acl::scope::Error> for Error {
+  fn from(error: acl::scope::Error) -> Self {
     Self::ScopeError(error)
   }
 }

@@ -7,13 +7,14 @@ use xid;
 use warp;
 use base64;
 
+use crate::acl;
 use crate::store;
 use crate::model;
 
 #[derive(Debug)]
 pub enum Error {
   StoreError(store::error::Error),
-  ScopeError(model::scope::Error),
+  ScopeError(acl::scope::Error),
   ApiKeyError(model::apikey::Error),
   NotFoundError(store::error::Error),
   IOError(io::Error),
@@ -35,8 +36,8 @@ impl From<store::error::Error> for Error {
   }
 }
 
-impl From<model::scope::Error> for Error {
-  fn from(error: model::scope::Error) -> Self {
+impl From<acl::scope::Error> for Error {
+  fn from(error: acl::scope::Error) -> Self {
     Self::ScopeError(error)
   }
 }

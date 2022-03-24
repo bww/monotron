@@ -5,7 +5,7 @@ use rand::{self, Rng};
 use tokio_postgres;
 
 use crate::store;
-use crate::model::scope;
+use crate::acl::scope;
 
 const AUTH_TYPE_BASIC: &str = "Basic";
 

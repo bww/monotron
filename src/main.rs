@@ -1,9 +1,11 @@
+mod acl;
 mod error;
 mod store;
 mod model;
 
 use warp::{http, Filter};
 use envconfig::Envconfig;
+
 use crate::model::apikey;
 
 const HEADER_AUTHORIZATION: &str = "Authorization";
@@ -66,7 +68,7 @@ async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std:
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
   } else if let Some(cause) = err.find::<warp::reject::MissingHeader>() {
     handle_missing_header(cause)
-  } else if let Some(cause) = err.find::<model::scope::Error>() {
+  } else if let Some(cause) = err.find::<acl::scope::Error>() {
     handle_scope_error(cause)
   } else if let Some(cause) = err.find::<model::apikey::Error>() {
     handle_apikey_error(cause)
@@ -86,7 +88,7 @@ fn handle_missing_header(err: &warp::reject::MissingHeader) -> Result<warp::repl
   }
 }
 
-fn handle_scope_error(err: &model::scope::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
+fn handle_scope_error(err: &acl::scope::Error) -> Result<warp::reply::WithStatus<&'static str>, std::convert::Infallible> {
   match err {
     _ => Ok(warp::reply::with_status("ACL_ERROR", http::StatusCode::INTERNAL_SERVER_ERROR)),
   }
@@ -131,7 +133,7 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
 }
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows(model::scope::Operation::Read, model::scope::Resource::Entry)?;
+  auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
   let entry = match store.fetch_entry(&auth, key).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
@@ -140,7 +142,7 @@ async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Author
 }
 
 async fn handle_inc_entry(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows(model::scope::Operation::Write, model::scope::Resource::Entry)?;
+  auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
   let entry = match store.inc_entry(&auth, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
