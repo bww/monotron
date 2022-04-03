@@ -101,6 +101,10 @@ impl ApiKey {
     })
   }
   
+  pub fn auth(&self, key: &str, secret: &str) -> bool {
+    self.key == key && self.secret == secret
+  }
+  
   pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
     self.scopes.allows(op, rc)
   }
@@ -126,6 +130,10 @@ impl Authorization {
       api_key: ApiKey::unmarshal(row)?,
       account_id: row.try_get(4)?,
     })
+  }
+  
+  pub fn auth(&self, key: &str, secret: &str) -> bool {
+    self.api_key.auth(key, secret)
   }
   
   pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {

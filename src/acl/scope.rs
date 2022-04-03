@@ -98,6 +98,13 @@ pub struct Scope {
 }
 
 impl Scope {
+  pub fn new(op: Operation, rc: Resource) -> Scope {
+    Scope{
+      resource: rc,
+      ops: vec!(op),
+    }
+  }
+  
   pub fn parse(s: &str) -> Result<Scope, Error> {
     let f: Vec<&str> = s.trim().split(':').collect();
     if f.len() != 2 {

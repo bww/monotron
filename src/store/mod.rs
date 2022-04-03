@@ -64,23 +64,9 @@ impl Store {
     )
     .await?;
     
-    client.execute(
-      "INSERT INTO mn_api_key (id, key, secret, scopes) VALUES (1, 'bootstrap', 'ztLvoY6IKyxA', ARRAY['*:system','*:entry'])
+    client.execute( // this is the implied system account
+      "INSERT INTO mn_account (id) VALUES (0)
        ON CONFLICT (id) DO NOTHING",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "INSERT INTO mn_account (id) VALUES (1)
-       ON CONFLICT (id) DO NOTHING",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "INSERT INTO mn_account_r_api_key (account_id, api_key_id) VALUES (1, 1)
-       ON CONFLICT (account_id, api_key_id) DO NOTHING",
       &[]
     )
     .await?;

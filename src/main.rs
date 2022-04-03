@@ -14,6 +14,10 @@ const HEADER_AUTHORIZATION: &str = "Authorization";
 pub struct Config {
   #[envconfig(from = "DB_DSN", default = "postgresql://postgres@localhost/monotron_development?connect_timeout=5")]
   pub db_dsn: String,
+  #[envconfig(from = "ROOT_API_KEY")]
+  pub root_api_key: Option<String>,
+  #[envconfig(from = "ROOT_API_SECRET")]
+  pub root_api_secret: Option<String>,
 }
 
 #[tokio::main]
@@ -23,11 +27,29 @@ async fn main() -> Result<(), error::Error> {
     Err(err) => panic!("*** Could not load configuration from environment: {}", err),
   };
   
+  let root = match conf.root_api_key {
+    Some(key) => Some(apikey::Authorization{
+      account_id: 0,
+      api_key: apikey::ApiKey{
+        id: 0,
+        key: key,
+        secret: if let Some(secret) = conf.root_api_secret { secret } else { String::new() },
+        scopes: acl::scope::Scopes::new(vec!(
+          acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
+          acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Entry),
+        )),
+      },
+    }),
+    None => None,
+  };
+  
   let store = store::Store::new(&conf.db_dsn).await?;
   let store_filter = warp::any().map(move || store.clone());
+  let root_filter = warp::any().map(move || root.clone());
   
   let auth_filter = warp::any()
     .and(store_filter.clone())
+    .and(root_filter.clone())
     .and(warp::header::<String>(HEADER_AUTHORIZATION))
     .and_then(handle_auth);
   
@@ -117,8 +139,13 @@ fn handle_general_error(err: &error::Error) -> Result<warp::reply::WithStatus<&'
   }
 }
 
-async fn handle_auth(store: store::Store, header: String) -> Result<apikey::Authorization, warp::Rejection> {
+async fn handle_auth(store: store::Store, root: Option<apikey::Authorization>, header: String) -> Result<apikey::Authorization, warp::Rejection> {
   let (key, secret) = model::apikey::parse_apikey(&header)?;
+  if let Some(root) = root {
+    if root.auth(&key, &secret) {
+      return Ok(root);
+    }
+  }
   match store.fetch_authorization(key, secret).await {
     Ok(auth) => Ok(auth),
     Err(err) => match err {
