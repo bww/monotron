@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# where am i?
+me="$0"
+me_home=$(dirname "$0")
+me_home=$(cd "$me_home" && pwd)
+
+# project
+project_home=$(cd "$me_home/.." && pwd)
+
+# deps
+. "$me_home/_lib.sh"
+
+# defaults
+image_name=monotron
+image_host=gcr.io
+
+# parse arguments
+args=$(getopt p: $*)
+set -- $args
+for i; do
+  case "$i"
+  in
+    -p)
+      gcp_project="$2"; shift;
+      shift;;
+    --)
+      shift; break;;
+  esac
+done
+
+# configure
+image_url=$image_host/$gcp_project/$image_name
+
+# build our container
+docker build \
+  -t "$image_name:latest" \
+  -t "$image_name:$GITHASH" \
+  -t "$image_url:latest" \
+  -t "$image_url:$GITHASH" \
+  -f "$project_home/deploy/build/Dockerfile" \
+  "$project_home"
+
+# push to our repo
+docker push "$image_url:latest"
+docker push "$image_url:$GITHASH"

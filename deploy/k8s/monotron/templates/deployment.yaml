@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "monotron.fullname" . }}
+  labels:
+    {{- include "monotron.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "monotron.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "monotron.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: service
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /v1
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /v1
+              port: {{ .Values.service.port }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env: 
+            - name: ENVIRON
+              value: {{ .Values.monotron.environ }}
+            - name: COMPONENT
+              value: {{ .Values.monotron.component }}
+            - name: LISTEN
+              value: {{ .Values.monotron.addr }}
+            - name: ROOT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.app.secrets }}
+                  key: rootAPIKey
+            - name: ROOT_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.app.secrets }}
+                  key: rootAPISecret
+            - name: DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.app.secrets }}
+                  key: databaseDSN
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

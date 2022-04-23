@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# where am i?
+me="$0"
+me_home=$(dirname "$0")
+me_home=$(cd "$me_home" && pwd)
+
+# project
+project_home=$(cd "$me_home/.." && pwd)
+
+# deps
+. "$me_home/_lib.sh"
+
+# defaults
+component=monotron
+
+# values
+if [ -z "$1" ]; then
+  echo "Usage: deploy <values>"
+  exit 1
+fi
+
+# where are we
+cluster="$(kubectl config current-context)"
+echo -e "You are about to install $component here:\n\n    ➤ $cluster"
+
+echo
+read -p "Really deploy? [y/N] " -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+  helm upgrade -i -f "$1" --set-string image.tag=$VERSION "$component" "$project_home/deploy/k8s/$component"
+fi
