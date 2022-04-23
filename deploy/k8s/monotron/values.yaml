@@ -2,7 +2,7 @@
 replicaCount: 1
 
 image:
-  repository: gcr.io/treno-staging/treno-async
+  repository: gcr.io/treno-staging/monotron
   pullPolicy: Always
 
 app:

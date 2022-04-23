@@ -16,8 +16,26 @@ project_home=$(cd "$me_home/.." && pwd)
 # defaults
 component=monotron
 
+# parse arguments
+args=$(getopt s: $*)
+set -- $args
+for i; do
+  case "$i"
+  in
+    -s)
+      extra_args="$extra_args --set-string $2"; shift;
+      shift;;
+    --)
+      shift;
+      break;;
+  esac
+done
+
 # values
-if [ -z "$1" ]; then
+if [ ! -z "$1" ]; then
+  values="$1"
+  shift
+else
   echo "Usage: deploy <values>"
   exit 1
 fi
@@ -31,5 +49,5 @@ read -p "Really deploy? [y/N] " -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  helm upgrade -i -f "$1" --set-string image.tag=$VERSION "$component" "$project_home/deploy/k8s/$component"
+  helm upgrade -i -f "$values" --set-string image.tag=$VERSION $extra_args "$component" "$project_home/deploy/k8s/$component"
 fi
