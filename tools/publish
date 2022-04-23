@@ -37,12 +37,15 @@ image_url=$image_host/$gcp_project/$image_name
 # build our container
 docker build \
   -t "$image_name:latest" \
+  -t "$image_name:$ENVIRON" \
   -t "$image_name:$GITHASH" \
   -t "$image_url:latest" \
+  -t "$image_url:$ENVIRON" \
   -t "$image_url:$GITHASH" \
   -f "$project_home/deploy/build/Dockerfile" \
   "$project_home"
 
 # push to our repo
 docker push "$image_url:latest"
+docker push "$image_url:$ENVIRON"
 docker push "$image_url:$GITHASH"
