@@ -15,9 +15,10 @@ project_home=$(cd "$me_home/.." && pwd)
 
 # defaults
 component=monotron
+image_tag=latest
 
 # parse arguments
-args=$(getopt s: $*)
+args=$(getopt s:t: $*)
 set -- $args
 for i; do
   case "$i"
@@ -25,13 +26,15 @@ for i; do
     -s)
       extra_args="$extra_args --set-string $2"; shift;
       shift;;
+    -t)
+      image_tag="$2"; shift;
+      shift;;
     --)
       shift;
       break;;
   esac
 done
 
-# values
 if [ ! -z "$1" ]; then
   values="$1"
   shift
@@ -40,14 +43,19 @@ else
   exit 1
 fi
 
+if [ -z "$image_tag" ]; then
+  echo "*** No image tag specified; use: -t <tag>"
+  exit 1
+fi
+
 # where are we
 cluster="$(kubectl config current-context)"
-echo -e "You are about to install $component here:\n\n    ➤ $cluster"
+echo -e "You are about to install $component:$image_tag here:\n\n    ➤ $cluster"
 
 echo
 read -p "Really deploy? [y/N] " -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  helm upgrade -i -f "$values" --set-string image.tag=$VERSION $extra_args "$component" "$project_home/deploy/k8s/$component"
+  helm upgrade -i -f "$values" --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
 fi
