@@ -205,7 +205,7 @@ async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Author
 }
 
 async fn handle_delete_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
+  auth.assert_allows(acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
   match store.delete_entry(&auth, key).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
@@ -231,7 +231,7 @@ async fn handle_inc_entry(key: String, token: String, store: store::Store, auth:
 }
 
 async fn handle_delete_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
+  auth.assert_allows(acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
   match store.delete_entry_version(&auth, key, token).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
