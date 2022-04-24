@@ -85,6 +85,20 @@ impl Store {
     )
     .await?;
     
+    client.execute(
+      "CREATE TABLE IF NOT EXISTS mn_entry_version (
+         key        VARCHAR(256) NOT NULL,
+         creator_id BIGINT NOT NULL REFERENCES mn_account (id),
+         token      VARCHAR(256), -- not nullable in version history
+         value      BIGINT NOT NULL,
+         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+         PRIMARY KEY (key, creator_id, token)
+      )",
+      &[]
+    )
+    .await?;
+    
     Ok(())
   }
   
@@ -120,6 +134,7 @@ impl Store {
   
   pub async fn _store_entry(&self, ent: &entry::Entry) -> Result<(), error::Error> {
     let client = self.pool.get().await?;
+    
     client.execute("
       INSERT INTO mn_entry (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
       ON CONFLICT (key, creator_id) DO UPDATE SET token = $3, value = $4, updated_at = now()",
@@ -128,6 +143,18 @@ impl Store {
       ]
     )
     .await?;
+    
+    if let Some(token) = &ent.token {
+      client.execute("
+        INSERT INTO mn_entry_version (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
+        ON CONFLICT (key, creator_id, token) DO UPDATE SET value = $4, updated_at = now()",
+        &[
+          &ent.key, &ent.creator_id, &token, &ent.value,
+        ]
+      )
+      .await?;
+    }
+    
     Ok(())
   }
   
@@ -136,8 +163,7 @@ impl Store {
     
     let stream = client.query_raw("
       SELECT key, creator_id, token, value FROM mn_entry
-      WHERE key = $1 AND creator_id = $2
-      FOR UPDATE",
+      WHERE key = $1 AND creator_id = $2",
       slice_iter(&[
         &key,
         &auth.account_id,
@@ -150,6 +176,38 @@ impl Store {
       Some(row) => Ok(entry::Entry::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
+  }
+  
+  pub async fn fetch_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<entry::Entry, error::Error> {
+    let client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT key, creator_id, token, value FROM mn_entry_version
+      WHERE key = $1 AND creator_id = $2 AND token = $3",
+      slice_iter(&[
+        &key,
+        &auth.account_id,
+        &token,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(entry::Entry::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
+  }
+  
+  pub async fn delete_entry(&self, auth: &apikey::Authorization, key: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
+    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
+    
+    tx.commit().await?;
+    Ok(())
   }
   
   pub async fn inc_entry(&self, auth: &apikey::Authorization, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
@@ -195,8 +253,33 @@ impl Store {
     )
     .await?;
     
+    if let Some(token) = &token {
+      tx.execute("
+        INSERT INTO mn_entry_version (key, creator_id, token, value) VALUES ($1, $2, $3, $4)
+        ON CONFLICT (key, creator_id, token) DO UPDATE SET value = $4, updated_at = now()",
+        &[
+          &key,
+          &auth.account_id,
+          &token,
+          &update.value,
+        ]
+      )
+      .await?;
+    }
+    
     tx.commit().await?;
     Ok(update)
+  }
+  
+  pub async fn delete_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
+    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
+    
+    tx.commit().await?;
+    Ok(())
   }
   
 }

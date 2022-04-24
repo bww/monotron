@@ -6,8 +6,11 @@ mod model;
 use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
+use once_cell::sync;
 
 use crate::model::apikey;
+
+static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
 const HEADER_AUTHORIZATION: &str = "Authorization";
 
@@ -21,15 +24,19 @@ pub struct Config {
   pub root_api_key: Option<String>,
   #[envconfig(from = "ROOT_API_SECRET")]
   pub root_api_secret: Option<String>,
+  #[envconfig(from = "DEBUG", default = "false")]
+  pub debug: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
-  println!("----> Monotron is starting: {}", chrono::Utc::now());
+  println!("----> Monotron is starting @ {}", chrono::Utc::now());
   let conf = match Config::init_from_env() {
     Ok(conf) => conf,
     Err(err) => panic!("*** Could not load configuration from environment: {}", err),
   };
+  
+  DEBUG.set(conf.debug).expect("Could not set global debug state");
   
   let root = match conf.root_api_key {
     Some(key) => Some(apikey::Authorization{
@@ -67,23 +74,44 @@ async fn main() -> Result<(), error::Error> {
     .and(auth_filter.clone())
     .and_then(handle_get_entry);
   
+  let get_entry_version = warp::path!("v1" / "series" / String / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_get_entry_version);
+  
   let inc_entry = warp::path!("v1" / "series" / String / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_inc_entry);
   
+  let delete_entry = warp::path!("v1" / "series" / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_delete_entry);
+  
+  let delete_entry_version = warp::path!("v1" / "series" / String / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_delete_entry_version);
+  
   let gets = warp::get().and(
     v1
       .or(get_entry)
+      .or(get_entry_version)
       .recover(handle_rejection),
   );
   let puts = warp::put().and(
     inc_entry
       .recover(handle_rejection),
   );
+  let dels = warp::delete().and(
+    delete_entry
+      .or(delete_entry_version)
+      .recover(handle_rejection),
+  );
   
-  println!("----> Running on: {}", conf.listen);
-  warp::serve(gets.or(puts))
+  println!("----> Running on :{}", conf.listen);
+  warp::serve(gets.or(puts).or(dels))
     .run(([0, 0, 0, 0], conf.listen))
     .await;
   
@@ -91,7 +119,9 @@ async fn main() -> Result<(), error::Error> {
 }
 
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
-  println!("*** {:?}", &err);
+  if *DEBUG.get().unwrap() {
+    println!("*** {:?}", &err);
+  }
   if err.is_not_found() {
     Ok(warp::reply::with_status("NOT_FOUND", http::StatusCode::NOT_FOUND))
   } else if let Some(cause) = err.find::<warp::reject::MissingHeader>() {
@@ -174,6 +204,23 @@ async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Author
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
 
+async fn handle_delete_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
+  match store.delete_entry(&auth, key).await {
+    Ok(_) => Ok(warp::reply::reply()),
+    Err(err) => Err(err.into()),
+  }
+}
+
+async fn handle_get_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
+  let entry = match store.fetch_entry_version(&auth, key, token).await {
+    Ok(v) => v,
+    Err(err) => return Err(err.into()),
+  };
+  Ok(warp::reply::with_status(entry, http::StatusCode::OK))
+}
+
 async fn handle_inc_entry(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
   let entry = match store.inc_entry(&auth, key, Some(token)).await {
@@ -182,3 +229,12 @@ async fn handle_inc_entry(key: String, token: String, store: store::Store, auth:
   };
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
+
+async fn handle_delete_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
+  match store.delete_entry_version(&auth, key, token).await {
+    Ok(_) => Ok(warp::reply::reply()),
+    Err(err) => Err(err.into()),
+  }
+}
+
