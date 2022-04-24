@@ -178,17 +178,6 @@ impl Store {
     }
   }
   
-  pub async fn delete_entry(&self, auth: &apikey::Authorization, key: String) -> Result<(), error::Error> {
-    let mut client = self.pool.get().await?;
-    let tx = client.transaction().await?;
-    
-    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
-    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
-    
-    tx.commit().await?;
-    Ok(())
-  }
-  
   pub async fn fetch_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<entry::Entry, error::Error> {
     let client = self.pool.get().await?;
     
@@ -208,6 +197,17 @@ impl Store {
       Some(row) => Ok(entry::Entry::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
+  }
+  
+  pub async fn delete_entry(&self, auth: &apikey::Authorization, key: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
+    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
+    
+    tx.commit().await?;
+    Ok(())
   }
   
   pub async fn inc_entry(&self, auth: &apikey::Authorization, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
@@ -269,6 +269,17 @@ impl Store {
     
     tx.commit().await?;
     Ok(update)
+  }
+  
+  pub async fn delete_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
+    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
+    
+    tx.commit().await?;
+    Ok(())
   }
   
 }

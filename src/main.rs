@@ -89,6 +89,11 @@ async fn main() -> Result<(), error::Error> {
     .and(auth_filter.clone())
     .and_then(handle_delete_entry);
   
+  let delete_entry_version = warp::path!("v1" / "series" / String / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_delete_entry_version);
+  
   let gets = warp::get().and(
     v1
       .or(get_entry)
@@ -101,6 +106,7 @@ async fn main() -> Result<(), error::Error> {
   );
   let dels = warp::delete().and(
     delete_entry
+      .or(delete_entry_version)
       .recover(handle_rejection),
   );
   
@@ -223,3 +229,12 @@ async fn handle_inc_entry(key: String, token: String, store: store::Store, auth:
   };
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
+
+async fn handle_delete_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
+  match store.delete_entry_version(&auth, key, token).await {
+    Ok(_) => Ok(warp::reply::reply()),
+    Err(err) => Err(err.into()),
+  }
+}
+
