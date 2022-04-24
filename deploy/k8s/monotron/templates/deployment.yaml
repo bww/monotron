@@ -46,7 +46,7 @@ spec:
             - name: COMPONENT
               value: {{ .Values.monotron.component }}
             - name: LISTEN
-              value: {{ .Values.monotron.addr }}
+              value: {{ .Values.service.port | quote }}
             - name: ROOT_API_KEY
               valueFrom:
                 secretKeyRef:

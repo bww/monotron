@@ -15,7 +15,7 @@ project_home=$(cd "$me_home/.." && pwd)
 
 # defaults
 component=monotron
-image_tag=latest
+image_tag=$ENVIRON
 
 # parse arguments
 args=$(getopt s:t: $*)

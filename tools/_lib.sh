@@ -1,7 +1,9 @@
 
 if [ -z "$ENVIRON" ]; then
-  ENVIRON=development
+  echo "\$ENVIRON is not defined"
+  exit 1
 fi
+
 if [ -z "$GITHASH" ]; then
   GITHASH=$(git log --pretty=format:'%h' -n 1)
 fi

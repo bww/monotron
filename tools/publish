@@ -31,6 +31,11 @@ for i; do
   esac
 done
 
+if [ -z "$gcp_project" ]; then
+  echo "*** No GCP project specified for repo; use: -p <project_id>"
+  exit 1
+fi
+
 # configure
 image_url=$image_host/$gcp_project/$image_name
 

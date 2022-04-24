@@ -84,7 +84,7 @@ async fn main() -> Result<(), error::Error> {
   
   println!("----> Running on: {}", conf.listen);
   warp::serve(gets.or(puts))
-    .run(([127, 0, 0, 1], conf.listen))
+    .run(([0, 0, 0, 0], conf.listen))
     .await;
   
   Ok(())

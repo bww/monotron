@@ -12,7 +12,6 @@ app:
 monotron:
   environ: staging
   component: monotron
-  addr: :3030
   enableProfiling: true
   # databaseDSN: postgres://...
   # credentials:
