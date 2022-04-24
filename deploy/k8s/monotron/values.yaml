@@ -14,10 +14,10 @@ monotron:
   component: monotron
   addr: :3030
   enableProfiling: true
-  databaseDSN: ""
-  credentials:
-    apiKey: root
-    apiSecret: secret
+  # databaseDSN: postgres://...
+  # credentials:
+  #   apiKey: root
+  #   apiSecret: secret
 
 securityContext:
   capabilities:
