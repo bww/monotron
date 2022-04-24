@@ -2,6 +2,8 @@ use std::fmt;
 use std::str;
 
 use rand::{self, Rng};
+use serde::{Serialize, Deserialize};
+use serde_json::json;
 use tokio_postgres;
 
 use crate::store;
@@ -77,7 +79,7 @@ pub fn parse_apikey(data: &str) -> Result<(String, String), Error> {
   Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiKey {
   pub id: i64,
   pub key: String,
@@ -115,6 +117,12 @@ impl ApiKey {
     }else{
       Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
     }
+  }
+}
+
+impl warp::Reply for ApiKey {
+  fn into_response(self) -> warp::reply::Response {
+    warp::reply::Response::new(json!(self).to_string().into())
   }
 }
 

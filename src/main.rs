@@ -207,14 +207,20 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
 }
 
 async fn handle_create_api_key(account_id: u64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {
-  println!(">>> {}", scopes);
+  auth.assert_allows(acl::scope::Operation::Write, acl::scope::Resource::Account)?;
+  let (key, secret) = apikey::gen_apikey();
+  let apikey = apikey::ApiKey{
+    id: 0,
+    key: key,
+    secret: secret,
+    scopes: scopes,
+  };
   // auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
   // let entry = match store.fetch_entry(&auth, key).await {
   //   Ok(v) => v,
   //   Err(err) => return Err(err.into()),
   // };
-  // Ok(warp::reply::with_status(entry, http::StatusCode::OK))
-  Ok(warp::reply::reply())
+  Ok(warp::reply::with_status(apikey, http::StatusCode::OK))
 }
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {

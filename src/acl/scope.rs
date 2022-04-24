@@ -68,16 +68,18 @@ impl fmt::Display for Operation {
 pub enum Resource {
   System,
   ACL,
+  Account,
   Entry,
 }
 
 impl Resource {
   pub fn parse(s: &str) -> Result<Resource, Error> {
     match s.trim().to_lowercase().as_ref() {
-      "system" => Ok(Resource::System),
-      "acl"    => Ok(Resource::ACL),
-      "entry"  => Ok(Resource::Entry),
-      _        => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
+      "system"  => Ok(Resource::System),
+      "acl"     => Ok(Resource::ACL),
+      "account" => Ok(Resource::Account),
+      "entry"   => Ok(Resource::Entry),
+      _         => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
     }
   }
 }
@@ -85,9 +87,10 @@ impl Resource {
 impl fmt::Display for Resource {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Resource::System => write!(f, "system"),
-      Resource::ACL    => write!(f, "acl"),
-      Resource::Entry  => write!(f, "entry"),
+      Resource::System  => write!(f, "system"),
+      Resource::ACL     => write!(f, "acl"),
+      Resource::Account => write!(f, "account"),
+      Resource::Entry   => write!(f, "entry"),
     }
   }
 }
