@@ -7,6 +7,7 @@ use warp;
 use postgres;
 use tokio_postgres;
 use tokio_postgres::types::to_sql_checked;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -27,7 +28,7 @@ impl fmt::Display for Error {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Operation {
   Read, Write, Delete, Every,
 }
@@ -63,7 +64,7 @@ impl fmt::Display for Operation {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Resource {
   System,
   ACL,
@@ -91,7 +92,7 @@ impl fmt::Display for Resource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Scope {
   pub ops: Vec<Operation>,
   pub resource: Resource,
@@ -199,7 +200,7 @@ impl fmt::Display for Scope {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Scopes(Vec<Scope>);
 
 impl Scopes {

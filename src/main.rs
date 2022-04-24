@@ -7,6 +7,7 @@ use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
 use once_cell::sync;
+use serde::{Serialize, Deserialize};
 
 use crate::model::apikey;
 
@@ -69,6 +70,12 @@ async fn main() -> Result<(), error::Error> {
     .and(store_filter.clone())
     .and_then(handle_v1);
   
+  let create_api_key = warp::path!("v1" / "account" / u64 / "apikeys")
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and(warp::body::json())
+    .and_then(handle_create_api_key);
+  
   let get_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
@@ -104,6 +111,10 @@ async fn main() -> Result<(), error::Error> {
     inc_entry
       .recover(handle_rejection),
   );
+  let posts = warp::post().and(
+    create_api_key
+      .recover(handle_rejection),
+  );
   let dels = warp::delete().and(
     delete_entry
       .or(delete_entry_version)
@@ -111,7 +122,7 @@ async fn main() -> Result<(), error::Error> {
   );
   
   println!("----> Running on :{}", conf.listen);
-  warp::serve(gets.or(puts).or(dels))
+  warp::serve(gets.or(puts).or(posts).or(dels))
     .run(([0, 0, 0, 0], conf.listen))
     .await;
   
@@ -193,6 +204,17 @@ async fn handle_auth(store: store::Store, root: Option<apikey::Authorization>, h
 
 async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
   Ok(warp::reply::with_status("API v1", http::StatusCode::OK))
+}
+
+async fn handle_create_api_key(account_id: u64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {
+  println!(">>> {}", scopes);
+  // auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
+  // let entry = match store.fetch_entry(&auth, key).await {
+  //   Ok(v) => v,
+  //   Err(err) => return Err(err.into()),
+  // };
+  // Ok(warp::reply::with_status(entry, http::StatusCode::OK))
+  Ok(warp::reply::reply())
 }
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
