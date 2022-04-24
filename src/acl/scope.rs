@@ -92,7 +92,7 @@ impl fmt::Display for Resource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Scope {
   pub ops: Vec<Operation>,
   pub resource: Resource,
@@ -137,6 +137,42 @@ impl Scope {
       }
     }
     false
+  }
+}
+
+impl Serialize for Scope {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(&self.to_string())
+  }
+}
+
+impl<'de> Deserialize<'de> for Scope {
+  fn deserialize<D>(deserializer: D) -> Result<Scope, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    struct ScopeVisitor;
+    impl<'de> serde::de::Visitor<'de> for ScopeVisitor {
+      type Value = Scope;
+
+      fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a scope")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<Scope, E>
+      where
+        E: serde::de::Error,
+      {
+        match Scope::parse(value) {
+          Ok(scope) => Ok(scope),
+          Err(err) => Err(serde::de::Error::custom(err.to_string())),
+        }
+      }
+    }
+    deserializer.deserialize_identifier(ScopeVisitor)
   }
 }
 
