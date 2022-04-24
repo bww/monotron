@@ -3,6 +3,7 @@ mod error;
 mod store;
 mod model;
 
+use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
 
@@ -14,6 +15,8 @@ const HEADER_AUTHORIZATION: &str = "Authorization";
 pub struct Config {
   #[envconfig(from = "DB_DSN", default = "postgresql://postgres@localhost/monotron_development?connect_timeout=5")]
   pub db_dsn: String,
+  #[envconfig(from = "LISTEN", default = "3030")]
+  pub listen: u16,
   #[envconfig(from = "ROOT_API_KEY")]
   pub root_api_key: Option<String>,
   #[envconfig(from = "ROOT_API_SECRET")]
@@ -22,6 +25,7 @@ pub struct Config {
 
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
+  println!("----> Monotron is starting: {}", chrono::Utc::now());
   let conf = match Config::init_from_env() {
     Ok(conf) => conf,
     Err(err) => panic!("*** Could not load configuration from environment: {}", err),
@@ -43,6 +47,7 @@ async fn main() -> Result<(), error::Error> {
     None => None,
   };
   
+  println!("----> Connecting to DB...");
   let store = store::Store::new(&conf.db_dsn).await?;
   let store_filter = warp::any().map(move || store.clone());
   let root_filter = warp::any().map(move || root.clone());
@@ -77,8 +82,9 @@ async fn main() -> Result<(), error::Error> {
       .recover(handle_rejection),
   );
   
+  println!("----> Running on: {}", conf.listen);
   warp::serve(gets.or(puts))
-    .run(([127, 0, 0, 1], 3030))
+    .run(([127, 0, 0, 1], conf.listen))
     .await;
   
   Ok(())
