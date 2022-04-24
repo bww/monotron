@@ -29,6 +29,23 @@ pub struct Config {
   pub debug: bool,
 }
 
+fn root_authorization(key: String, secret: String) -> apikey::Authorization {
+  apikey::Authorization{
+    account_id: 0,
+    api_key: apikey::ApiKey{
+      id: 0,
+      key: key,
+      secret: secret,
+      scopes: acl::scope::Scopes::new(vec!(
+        acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
+        acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::ACL),
+        acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Account),
+        acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Entry),
+      )),
+    },
+  }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), error::Error> {
   println!("----> Monotron is starting @ {}", chrono::Utc::now());
@@ -40,18 +57,7 @@ async fn main() -> Result<(), error::Error> {
   DEBUG.set(conf.debug).expect("Could not set global debug state");
   
   let root = match conf.root_api_key {
-    Some(key) => Some(apikey::Authorization{
-      account_id: 0,
-      api_key: apikey::ApiKey{
-        id: 0,
-        key: key,
-        secret: if let Some(secret) = conf.root_api_secret { secret } else { String::new() },
-        scopes: acl::scope::Scopes::new(vec!(
-          acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
-          acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Entry),
-        )),
-      },
-    }),
+    Some(key) => Some(root_authorization(key, conf.root_api_secret.unwrap())),
     None => None,
   };
   
