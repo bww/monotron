@@ -84,27 +84,52 @@ pub struct ApiKey {
   pub id: i64,
   pub key: String,
   pub secret: String,
-  pub scopes: scope::Scopes,
 }
 
 impl ApiKey {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<ApiKey, store::error::Error> {
+    Ok(ApiKey{
+      id: row.try_get(0)?,
+      key: row.try_get(1)?,
+      secret: row.try_get(2)?,
+    })
+  }
+  
+  pub fn auth(&self, key: &str, secret: &str) -> bool {
+    self.key == key && self.secret == secret
+  }
+}
+
+impl warp::Reply for ApiKey {
+  fn into_response(self) -> warp::reply::Response {
+    warp::reply::Response::new(json!(self).to_string().into())
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Authorization {
+  pub api_key: ApiKey,
+  pub account_id: i64,
+  pub scopes: scope::Scopes,
+}
+
+impl Authorization {
+  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
     let scope_specs: Vec<String> = row.try_get(3)?;
     let scope_set: Vec<scope::Scope> = if scope_specs.len() > 0 {
       scope::Scope::parse_set(scope_specs)?
     }else{
       Vec::new()
     };
-    Ok(ApiKey{
-      id: row.try_get(0)?,
-      key: row.try_get(1)?,
-      secret: row.try_get(2)?,
+    Ok(Authorization{
+      api_key: ApiKey::unmarshal(row)?,
+      account_id: row.try_get(4)?,
       scopes: scope::Scopes::new(scope_set),
     })
   }
   
   pub fn auth(&self, key: &str, secret: &str) -> bool {
-    self.key == key && self.secret == secret
+    self.api_key.auth(key, secret)
   }
   
   pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
@@ -118,37 +143,20 @@ impl ApiKey {
       Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
     }
   }
+  
+  pub fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
+    if self.account_id != account_id {
+      return Err(Error::Forbidden(format!("Account mismatch: {} != {}", self.account_id, account_id)))
+    }
+    if !self.allows(op, rc) {
+      return Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
+    }
+    Ok(())
+  }
 }
 
-impl warp::Reply for ApiKey {
+impl warp::Reply for Authorization {
   fn into_response(self) -> warp::reply::Response {
     warp::reply::Response::new(json!(self).to_string().into())
-  }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Authorization {
-  pub api_key: ApiKey,
-  pub account_id: i64,
-}
-
-impl Authorization {
-  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
-    Ok(Authorization{
-      api_key: ApiKey::unmarshal(row)?,
-      account_id: row.try_get(4)?,
-    })
-  }
-  
-  pub fn auth(&self, key: &str, secret: &str) -> bool {
-    self.api_key.auth(key, secret)
-  }
-  
-  pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
-    self.api_key.allows(op, rc)
-  }
-  
-  pub fn assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
-    self.api_key.assert_allows(op, rc)
   }
 }

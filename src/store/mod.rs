@@ -46,7 +46,6 @@ impl Store {
          id         BIGSERIAL PRIMARY KEY,
          key        VARCHAR(256) NOT NULL UNIQUE,
          secret     VARCHAR(1024) NOT NULL,
-         scopes     VARCHAR(64)[],
          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
       )",
@@ -58,6 +57,7 @@ impl Store {
       "CREATE TABLE IF NOT EXISTS mn_account_r_api_key (
          account_id BIGINT NOT NULL REFERENCES mn_account (id),
          api_key_id BIGINT NOT NULL REFERENCES mn_api_key (id),
+         scopes     VARCHAR(64)[] NOT NULL,
          PRIMARY KEY (account_id, api_key_id)
       )",
       &[]
@@ -111,9 +111,40 @@ impl Store {
     Ok(val)
   }
   
+  pub async fn store_authorization(&self, auth: &apikey::Authorization) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    let id = match tx.query_one(
+      "INSERT INTO mn_api_key (key, secret) VALUES ($1, $2) RETURNING id",
+      &[
+        &auth.api_key.key,
+        &auth.api_key.secret,
+      ]
+    ).await {
+      Ok(row) => row.try_get(0)?,
+      Err(err) => return Err(err.into()),
+    };
+    
+    tx.execute("
+      INSERT INTO mn_account_r_api_key (account_id, api_key_id, scopes) VALUES ($1, $2, $3)
+      ON CONFLICT (account_id, api_key_id) DO UPDATE SET scopes = $3",
+      &[
+        &auth.account_id,
+        &auth.api_key.id,
+        &auth.scopes,
+      ]
+    ).await?;
+
+    tx.commit().await?;
+    Ok(())
+  }
+  
   pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
     let client = self.pool.get().await?;
     
+    // NOTE: this is modeled as M:N, but we expect a single result and always
+    // return the first record. we should reevalute this handling at some point.
     let stream = client.query_raw("
       SELECT k.id, k.key, k.secret, k.scopes, r.account_id FROM mn_api_key AS k
       INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
