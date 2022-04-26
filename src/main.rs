@@ -7,6 +7,7 @@ use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
 use once_cell::sync;
+use serde_json::json;
 
 use crate::model::apikey;
 
@@ -82,6 +83,11 @@ async fn main() -> Result<(), error::Error> {
     .and(warp::body::json())
     .and_then(handle_create_authorization);
   
+  let list_authorizations = warp::path!("v1" / "account" / i64 / "apikeys")
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_list_authorizations);
+  
   let delete_authorization = warp::path!("v1" / "account" / i64 / "apikeys" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
@@ -114,6 +120,7 @@ async fn main() -> Result<(), error::Error> {
   
   let gets = warp::get().and(
     v1
+      .or(list_authorizations)
       .or(get_entry)
       .or(get_entry_version)
       .recover(handle_rejection),
@@ -244,6 +251,13 @@ async fn handle_delete_authorization(account_id: i64, key: String, store: store:
   }
 }
 
+async fn handle_list_authorizations(account_id: i64, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::ACL)?;
+  match store.fetch_every_authorization_for_account(account_id).await {
+    Ok(azns) => Ok(warp::reply::with_status(warp::reply::Response::new(json!(azns).to_string().into()), http::StatusCode::OK)),
+    Err(err) => Err(err.into()),
+  }
+}
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;

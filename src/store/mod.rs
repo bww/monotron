@@ -7,6 +7,8 @@ use futures::{pin_mut, TryStreamExt};
 use crate::model::entry;
 use crate::model::apikey;
 
+const MAX_RESULTS: usize = 500;
+
 #[derive(Debug, Clone)]
 pub struct Store {
   pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>,
@@ -193,6 +195,29 @@ impl Store {
       Some(row) => Ok(apikey::Authorization::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
+  }
+  
+  pub async fn fetch_every_authorization_for_account(&self, account_id: i64) -> Result<Vec<apikey::Authorization>, error::Error> {
+    let client = self.pool.get().await?;
+    
+    let rows = client.query("
+      SELECT k.id, k.key, k.secret, r.account_id, r.scopes FROM mn_api_key AS k
+      INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
+      WHERE r.account_id = $1
+      LIMIT $2",
+      &[
+        &account_id,
+        &(MAX_RESULTS as i64),
+      ]
+    )
+    .await?;
+    
+    let mut res: Vec<apikey::Authorization> = Vec::new();
+    for row in rows {
+      res.push(apikey::Authorization::unmarshal(&row)?);
+    }
+    
+    Ok(res)
   }
   
   async fn fetch_api_key_for_account(&self, account_id: i64, key: String) -> Result<apikey::ApiKey, error::Error> {
