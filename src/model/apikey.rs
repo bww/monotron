@@ -123,7 +123,7 @@ pub struct Authorization {
 
 impl Authorization {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
-    let scope_specs: Vec<String> = row.try_get(3)?;
+    let scope_specs: Vec<String> = row.try_get(4)?;
     let scope_set: Vec<scope::Scope> = if scope_specs.len() > 0 {
       scope::Scope::parse_set(scope_specs)?
     }else{
@@ -131,7 +131,7 @@ impl Authorization {
     };
     Ok(Authorization{
       api_key: ApiKey::unmarshal(row)?,
-      account_id: row.try_get(4)?,
+      account_id: row.try_get(3)?,
       scopes: scope::Scopes::new(scope_set),
     })
   }

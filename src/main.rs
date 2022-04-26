@@ -12,6 +12,7 @@ use crate::model::apikey;
 
 static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
+const DEFAULT_ACCOUNT: i64 = 0;
 const HEADER_AUTHORIZATION: &str = "Authorization";
 
 #[derive(Envconfig)]
@@ -30,7 +31,7 @@ pub struct Config {
 
 fn root_authorization(key: String, secret: String) -> apikey::Authorization {
   apikey::Authorization{
-    account_id: 0,
+    account_id: DEFAULT_ACCOUNT,
     scopes: acl::scope::Scopes::new(vec!(
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::ACL),
@@ -60,7 +61,7 @@ async fn main() -> Result<(), error::Error> {
     None => None,
   };
   
-  println!("----> Connecting to DB...");
+  println!("----> Connecting to database");
   let store = store::Store::new(&conf.db_dsn).await?;
   let store_filter = warp::any().map(move || store.clone());
   let root_filter = warp::any().map(move || root.clone());
@@ -75,11 +76,11 @@ async fn main() -> Result<(), error::Error> {
     .and(store_filter.clone())
     .and_then(handle_v1);
   
-  let create_api_key = warp::path!("v1" / "account" / i64 / "apikeys")
+  let create_authorization = warp::path!("v1" / "account" / i64 / "apikeys")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::json())
-    .and_then(handle_create_api_key);
+    .and_then(handle_create_authorization);
   
   let get_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
@@ -117,7 +118,7 @@ async fn main() -> Result<(), error::Error> {
       .recover(handle_rejection),
   );
   let posts = warp::post().and(
-    create_api_key
+    create_authorization
       .recover(handle_rejection),
   );
   let dels = warp::delete().and(
@@ -211,7 +212,7 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
   Ok(warp::reply::with_status("API v1", http::StatusCode::OK))
 }
 
-async fn handle_create_api_key(account_id: i64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_create_authorization(account_id: i64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Account)?;
   let (key, secret) = apikey::gen_apikey();
   let create = apikey::Authorization{

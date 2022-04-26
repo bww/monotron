@@ -135,7 +135,7 @@ impl Store {
         &auth.scopes.scopes(),
       ]
     ).await?;
-
+    
     tx.commit().await?;
     Ok(apikey::Authorization{
       account_id: auth.account_id,
@@ -150,7 +150,7 @@ impl Store {
     // NOTE: this is modeled as M:N, but we expect a single result and always
     // return the first record. we should reevalute this handling at some point.
     let stream = client.query_raw("
-      SELECT k.id, k.key, k.secret, k.scopes, r.account_id FROM mn_api_key AS k
+      SELECT k.id, k.key, k.secret, r.account_id, r.scopes FROM mn_api_key AS k
       INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
       WHERE k.key = $1 AND k.secret = $2",
       slice_iter(&[
