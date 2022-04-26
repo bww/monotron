@@ -144,6 +144,35 @@ impl Store {
     })
   }
   
+  pub async fn delete_authorization(&self, account_id: i64, key: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    let api_key = self.fetch_api_key_for_account(account_id, key).await?;
+    
+    tx.execute("
+      DELETE FROM mn_account_r_api_key WHERE account_id = $1 AND api_key_id = $2",
+      &[
+        &account_id,
+        &api_key.id,
+      ]
+    ).await?;
+    
+    tx.execute("
+      DELETE FROM mn_api_key WHERE id IN (
+        SELECT r.id FROM mn_account_r_api_key AS r
+        WHERE r.account_id = $1 AND r.api_key_id = $2
+      ) = 0",
+      &[
+        &account_id,
+        &api_key.id,
+      ]
+    ).await?;
+    
+    tx.commit().await?;
+    Ok(())
+  }
+  
   pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
     let client = self.pool.get().await?;
     
@@ -163,6 +192,27 @@ impl Store {
     
     match stream.try_next().await? {
       Some(row) => Ok(apikey::Authorization::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
+  }
+  
+  async fn fetch_api_key_for_account(&self, account_id: i64, key: String) -> Result<apikey::ApiKey, error::Error> {
+    let client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT k.id, k.key, k.secret FROM mn_api_key AS k
+      INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
+      WHERE k.key = $1 AND r.account_id = $2",
+      slice_iter(&[
+        &key,
+        &account_id,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(apikey::ApiKey::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
   }

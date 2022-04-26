@@ -82,6 +82,11 @@ async fn main() -> Result<(), error::Error> {
     .and(warp::body::json())
     .and_then(handle_create_authorization);
   
+  let delete_authorization = warp::path!("v1" / "account" / i64 / "apikeys" / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_delete_authorization);
+  
   let get_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
@@ -122,7 +127,8 @@ async fn main() -> Result<(), error::Error> {
       .recover(handle_rejection),
   );
   let dels = warp::delete().and(
-    delete_entry
+    delete_authorization
+      .or(delete_entry)
       .or(delete_entry_version)
       .recover(handle_rejection),
   );
@@ -213,7 +219,7 @@ async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejec
 }
 
 async fn handle_create_authorization(account_id: i64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Account)?;
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::ACL)?;
   let (key, secret) = apikey::gen_apikey();
   let create = apikey::Authorization{
     account_id: account_id,
@@ -229,6 +235,15 @@ async fn handle_create_authorization(account_id: i64, store: store::Store, auth:
     Err(err) => return Err(err.into()),
   }
 }
+
+async fn handle_delete_authorization(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Delete, acl::scope::Resource::ACL)?;
+  match store.delete_authorization(account_id, key).await {
+    Ok(_) => Ok(warp::reply::reply()),
+    Err(err) => Err(err.into()),
+  }
+}
+
 
 async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
