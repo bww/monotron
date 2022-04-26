@@ -88,7 +88,7 @@ pub struct ApiKey {
 
 impl ApiKey {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<ApiKey, store::error::Error> {
-    Ok(ApiKey{
+    Ok(Self{
       id: row.try_get(0)?,
       key: row.try_get(1)?,
       secret: row.try_get(2)?,
@@ -97,6 +97,14 @@ impl ApiKey {
   
   pub fn auth(&self, key: &str, secret: &str) -> bool {
     self.key == key && self.secret == secret
+  }
+  
+  pub fn with_id(&self, id: i64) -> Self {
+    Self{
+      id: id,
+      key: self.key.to_owned(),
+      secret: self.secret.to_owned(),
+    }
   }
 }
 

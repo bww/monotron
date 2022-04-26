@@ -7,7 +7,6 @@ use warp;
 use tokio_postgres;
 
 use crate::acl;
-use crate::model;
 
 #[derive(Debug)]
 pub enum Error {

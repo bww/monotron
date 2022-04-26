@@ -255,6 +255,10 @@ impl Scopes {
     }
     false
   }
+  
+  pub fn scopes(&self) -> Vec<Scope> {
+    self.0.to_owned()
+  }
 }
 
 impl fmt::Display for Scopes {

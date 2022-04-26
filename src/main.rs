@@ -7,7 +7,6 @@ use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
 use once_cell::sync;
-use serde::{Serialize, Deserialize};
 
 use crate::model::apikey;
 
@@ -225,7 +224,7 @@ async fn handle_create_api_key(account_id: i64, store: store::Store, auth: apike
     },
   };
   match store.store_authorization(&create).await {
-    Ok(v) => Ok(warp::reply::with_status(create, http::StatusCode::OK)),
+    Ok(create) => Ok(warp::reply::with_status(create, http::StatusCode::OK)),
     Err(err) => return Err(err.into()),
   }
 }

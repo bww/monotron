@@ -111,11 +111,11 @@ impl Store {
     Ok(val)
   }
   
-  pub async fn store_authorization(&self, auth: &apikey::Authorization) -> Result<(), error::Error> {
+  pub async fn store_authorization(&self, auth: &apikey::Authorization) -> Result<apikey::Authorization, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
-    let id = match tx.query_one(
+    let api_key_id: i64 = match tx.query_one(
       "INSERT INTO mn_api_key (key, secret) VALUES ($1, $2) RETURNING id",
       &[
         &auth.api_key.key,
@@ -131,13 +131,17 @@ impl Store {
       ON CONFLICT (account_id, api_key_id) DO UPDATE SET scopes = $3",
       &[
         &auth.account_id,
-        &auth.api_key.id,
-        &auth.scopes,
+        &api_key_id,
+        &auth.scopes.scopes(),
       ]
     ).await?;
 
     tx.commit().await?;
-    Ok(())
+    Ok(apikey::Authorization{
+      account_id: auth.account_id,
+      scopes: auth.scopes.clone(),
+      api_key: auth.api_key.with_id(api_key_id),
+    })
   }
   
   pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
