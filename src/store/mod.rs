@@ -159,12 +159,11 @@ impl Store {
     ).await?;
     
     tx.execute("
-      DELETE FROM mn_api_key WHERE id IN (
-        SELECT r.id FROM mn_account_r_api_key AS r
-        WHERE r.account_id = $1 AND r.api_key_id = $2
+      DELETE FROM mn_api_key AS k WHERE k.id = $1 AND (
+        SELECT COUNT(*) FROM mn_account_r_api_key AS r
+        WHERE r.api_key_id = $1
       ) = 0",
       &[
-        &account_id,
         &api_key.id,
       ]
     ).await?;
