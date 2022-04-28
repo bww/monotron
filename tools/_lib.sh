@@ -10,3 +10,6 @@ fi
 if [ -z "$VERSION" ]; then
   VERSION=$GITHASH
 fi
+if [ -z "$INSTAUNIT" ]; then
+  INSTAUNIT=instaunit
+fi

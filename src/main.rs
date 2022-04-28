@@ -77,18 +77,18 @@ async fn main() -> Result<(), error::Error> {
     .and(store_filter.clone())
     .and_then(handle_v1);
   
-  let create_authorization = warp::path!("v1" / "account" / i64 / "apikeys")
+  let create_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::json())
     .and_then(handle_create_authorization);
   
-  let list_authorizations = warp::path!("v1" / "account" / i64 / "apikeys")
+  let list_authorizations = warp::path!("v1" / "accounts" / i64 / "apikeys")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_list_authorizations);
   
-  let delete_authorization = warp::path!("v1" / "account" / i64 / "apikeys" / String)
+  let delete_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_delete_authorization);

@@ -1,0 +1,45 @@
+
+title: Account & ACL Management
+
+options:
+  table-of-contents: y
+  
+  rewrite-headers:
+    Host: api.treno.io
+  
+  allow-headers:
+    - Host
+    - Content-Type
+    - Content-Length
+
+vars:
+  account_id: 0
+
+tests:
+  
+  -
+    id: apikey1
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 200
+      # compare: semantic
+      # entity: |
+      #   {
+      #     "scopes": [
+      #       "read,write:entry"
+      #     ]
+      #   }

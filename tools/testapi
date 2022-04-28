@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# where am i?
+me="$0"
+me_home=$(dirname "$0")
+me_home=$(cd "$me_home" && pwd)
+
+# project
+project_home=$(cd "$me_home/.." && pwd)
+
+export ENVIRON=integrate
+export ROOT_API_KEY=testapi
+export ROOT_API_SECRET=secret123
+
+# deps
+. "$me_home/_lib.sh"
+
+# defaults
+component=monotron
+hostname=localhost
+exec_cmd="cargo run"
+test_root="$project_home/test"
+
+# parse arguments
+args=$(getopt s:t: $*)
+set -- $args
+for i; do
+  case "$i"
+  in
+    -s)
+      extra_args="$extra_args --set-string $2"; shift;
+      shift;;
+    -t)
+      image_tag="$2"; shift;
+      shift;;
+    --)
+      shift;
+      break;;
+  esac
+done
+
+$me_home/cycledb
+
+if [ ! -z "$packages" ]; then \
+  $INSTAUNIT $extra_flags \
+    -base-url "http://$hostname:3030/" \
+    -http:redirects 0 \
+    -exec "${exec_cmd}" \
+    -await "http://$hostname:3030/v1" \
+    $services $(echo "$packages" | tr ',' ' ' | perl -pe 's/\s+/\n/g' | xargs -I '%' echo "$test_root/%.yml" | perl -pe 's/\n/ /g')
+else
+  $INSTAUNIT $extra_flags \
+    -base-url "http://$hostname:3030/" \
+    -http:redirects 0 \
+    -exec "${exec_cmd}" \
+    -await "http://$hostname:3030/v1" \
+    $service $(find "$test_root" -name '*.yml' -and \! -name '*-service.yml' | sort)
+fi
