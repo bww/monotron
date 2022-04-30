@@ -67,6 +67,8 @@ async fn main() -> Result<(), error::Error> {
   let store_filter = warp::any().map(move || store.clone());
   let root_filter = warp::any().map(move || root.clone());
   
+  let json_content = warp::reply::with::header("Content-Type", "application/json");
+  
   let auth_filter = warp::any()
     .and(store_filter.clone())
     .and(root_filter.clone())
@@ -75,54 +77,70 @@ async fn main() -> Result<(), error::Error> {
   
   let v1 = warp::path!("v1")
     .and(store_filter.clone())
-    .and_then(handle_v1);
+    .and_then(handle_v1)
+    .with(&json_content);
   
   let create_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::json())
-    .and_then(handle_create_authorization);
+    .and_then(handle_create_authorization)
+    .with(&json_content);
   
   let list_authorizations = warp::path!("v1" / "accounts" / i64 / "apikeys")
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_list_authorizations);
+    .and_then(handle_list_authorizations)
+    .with(&json_content);
+  
+  let fetch_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys" / String)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_fetch_authorization)
+    .with(&json_content);
   
   let delete_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_delete_authorization);
+    .and_then(handle_delete_authorization)
+    .with(&json_content);
   
-  let get_entry = warp::path!("v1" / "series" / String)
+  let fetch_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_get_entry);
+    .and_then(handle_fetch_entry)
+    .with(&json_content);
   
-  let get_entry_version = warp::path!("v1" / "series" / String / String)
+  let fetch_entry_version = warp::path!("v1" / "series" / String / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_get_entry_version);
+    .and_then(handle_fetch_entry_version)
+    .with(&json_content);
   
   let inc_entry = warp::path!("v1" / "series" / String / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_inc_entry);
+    .and_then(handle_inc_entry)
+    .with(&json_content);
   
   let delete_entry = warp::path!("v1" / "series" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_delete_entry);
+    .and_then(handle_delete_entry)
+    .with(&json_content);
   
   let delete_entry_version = warp::path!("v1" / "series" / String / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_delete_entry_version);
+    .and_then(handle_delete_entry_version)
+    .with(&json_content);
   
   let gets = warp::get().and(
     v1
       .or(list_authorizations)
-      .or(get_entry)
-      .or(get_entry_version)
+      .or(fetch_authorization)
+      .or(fetch_entry)
+      .or(fetch_entry_version)
       .recover(handle_rejection),
   );
   let puts = warp::put().and(
@@ -212,7 +230,7 @@ async fn handle_auth(store: store::Store, root: Option<apikey::Authorization>, h
       return Ok(root);
     }
   }
-  match store.fetch_authorization(key, secret).await {
+  match store.verify_authorization(key, secret).await {
     Ok(auth) => Ok(auth),
     Err(err) => match err {
       store::error::Error::NotFoundError => Err(model::apikey::Error::Unauthorized("Invalid API Key".to_string()).into()),
@@ -251,6 +269,14 @@ async fn handle_delete_authorization(account_id: i64, key: String, store: store:
   }
 }
 
+async fn handle_fetch_authorization(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::ACL)?;
+  match store.fetch_authorization_for_account(account_id, key).await {
+    Ok(azn) => Ok(warp::reply::with_status(warp::reply::Response::new(json!(azn).to_string().into()), http::StatusCode::OK)),
+    Err(err) => Err(err.into()),
+  }
+}
+
 async fn handle_list_authorizations(account_id: i64, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::ACL)?;
   match store.fetch_every_authorization_for_account(account_id).await {
@@ -259,7 +285,7 @@ async fn handle_list_authorizations(account_id: i64, store: store::Store, auth: 
   }
 }
 
-async fn handle_get_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_fetch_entry(key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
   let entry = match store.fetch_entry(&auth, key).await {
     Ok(v) => v,
@@ -276,7 +302,7 @@ async fn handle_delete_entry(key: String, store: store::Store, auth: apikey::Aut
   }
 }
 
-async fn handle_get_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_fetch_entry_version(key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows(acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
   let entry = match store.fetch_entry_version(&auth, key, token).await {
     Ok(v) => v,

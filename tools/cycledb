@@ -10,6 +10,8 @@ me_home=$(cd "$me_home" && pwd)
 # deps
 . "$me_home/_lib.sh"
 
-psql -U postgres -h 127.0.0.1 -c "drop database if exists monotron_$ENVIRON" > /dev/null
-psql -U postgres -h 127.0.0.1 -c "create database monotron_$ENVIRON" > /dev/null
+database="monotron_$ENVIRON"
+echo "Cycling database: $database"
 
+psql -U postgres -h 127.0.0.1 -c "drop database if exists $database" > /dev/null
+psql -U postgres -h 127.0.0.1 -c "create database $database" > /dev/null

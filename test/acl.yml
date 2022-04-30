@@ -18,8 +18,27 @@ vars:
 tests:
   
   -
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 401
+  
+  -
     id: apikey1
     require: true
+    
+    doc: |
+      Create an API Key in the specified Account.
+      
+      Requires `write:acl` scope in the Account.
     
     request:
       method: POST
@@ -36,10 +55,285 @@ tests:
 
     response:
       status: 200
-      # compare: semantic
-      # entity: |
-      #   {
-      #     "scopes": [
-      #       "read,write:entry"
-      #     ]
-      #   }
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read,write:entry"
+          ]
+        }
+
+  -
+    id: apikey2
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:acl"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read,write:acl"
+          ]
+        }
+
+  -
+    id: apikey3
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "*:acl"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "*:acl"
+          ]
+        }
+
+  - # apikey1 does not have system access and cannot create more api keys
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  - # apikey1 does not have system access and cannot list api keys
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        [
+          {
+            "api_key": {
+              "id": ${apikey1.response.value.api_key.id},
+              "key": "${apikey1.response.value.api_key.key}",
+              "secret": "${apikey1.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:entry"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${apikey2.response.value.api_key.id},
+              "key": "${apikey2.response.value.api_key.key}",
+              "secret": "${apikey2.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:acl"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${apikey3.response.value.api_key.id},
+              "key": "${apikey3.response.value.api_key.key}",
+              "secret": "${apikey3.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "*:acl"
+            ]
+          }
+        ]
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "api_key": {
+            "id": ${apikey1.response.value.api_key.id},
+            "key": "${apikey1.response.value.api_key.key}",
+            "secret": "${apikey1.response.value.api_key.secret}"
+          },
+          "scopes": [
+            "read,write:entry"
+          ]
+        }
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  - # apikey2 has rights to create api keys but not delete them
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey3.response.value.api_key.key}
+        password: ${apikey3.response.value.api_key.secret}
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 404
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        [
+          {
+            "api_key": {
+              "id": ${apikey2.response.value.api_key.id},
+              "key": "${apikey2.response.value.api_key.key}",
+              "secret": "${apikey2.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:acl"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${apikey3.response.value.api_key.id},
+              "key": "${apikey3.response.value.api_key.key}",
+              "secret": "${apikey3.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "*:acl"
+            ]
+          }
+        ]

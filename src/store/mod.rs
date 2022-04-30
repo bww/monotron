@@ -174,7 +174,7 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
+  pub async fn verify_authorization(&self, key: String, secret: String) -> Result<apikey::Authorization, error::Error> {
     let client = self.pool.get().await?;
     
     // NOTE: this is modeled as M:N, but we expect a single result and always
@@ -204,6 +204,7 @@ impl Store {
       SELECT k.id, k.key, k.secret, r.account_id, r.scopes FROM mn_api_key AS k
       INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
       WHERE r.account_id = $1
+      ORDER BY k.created_at
       LIMIT $2",
       &[
         &account_id,
@@ -218,6 +219,27 @@ impl Store {
     }
     
     Ok(res)
+  }
+  
+  pub async fn fetch_authorization_for_account(&self, account_id: i64, key: String) -> Result<apikey::Authorization, error::Error> {
+    let client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT k.id, k.key, k.secret, r.account_id, r.scopes FROM mn_api_key AS k
+      INNER JOIN mn_account_r_api_key AS r ON r.api_key_id = k.id
+      WHERE r.account_id = $1 AND k.key = $2",
+      slice_iter(&[
+        &account_id,
+        &key,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(apikey::Authorization::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
   }
   
   async fn fetch_api_key_for_account(&self, account_id: i64, key: String) -> Result<apikey::ApiKey, error::Error> {

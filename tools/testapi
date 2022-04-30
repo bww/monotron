@@ -10,7 +10,9 @@ me_home=$(cd "$me_home" && pwd)
 # project
 project_home=$(cd "$me_home/.." && pwd)
 
+# environment
 export ENVIRON=integrate
+export DB_DSN=postgresql://postgres@localhost/monotron_$ENVIRON?connect_timeout=5
 export ROOT_API_KEY=testapi
 export ROOT_API_SECRET=secret123
 
@@ -24,16 +26,13 @@ exec_cmd="cargo run"
 test_root="$project_home/test"
 
 # parse arguments
-args=$(getopt s:t: $*)
+args=$(getopt d $*)
 set -- $args
 for i; do
   case "$i"
   in
-    -s)
-      extra_args="$extra_args --set-string $2"; shift;
-      shift;;
-    -t)
-      image_tag="$2"; shift;
+    -d)
+      extra_args=$(append_flags "$extra_args" "-gendoc -doc:include-http -doc:format-entities");
       shift;;
     --)
       shift;
