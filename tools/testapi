@@ -32,7 +32,7 @@ for i; do
   case "$i"
   in
     -d)
-      extra_args=$(append_flags "$extra_args" "-gendoc -doc:include-http -doc:format-entities");
+      extra_flags=$(append_flags "$extra_flags" "-gendoc -doc:include-http -doc:format-entities");
       shift;;
     --)
       shift;

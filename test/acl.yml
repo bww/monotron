@@ -35,6 +35,7 @@ tests:
     id: apikey1
     require: true
     
+    title: POST /v1/accounts/{account_id}/apikeys
     doc: |
       Create an API Key in the specified Account.
       
@@ -158,6 +159,12 @@ tests:
       status: 403
 
   -
+    title: GET /v1/accounts/{account_id}/apikeys
+    doc: |
+      List API Keys in the specified Account.
+      
+      Requires `read:acl` scope in the Account.
+    
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/apikeys
@@ -228,6 +235,12 @@ tests:
       status: 403
 
   -
+    title: GET /v1/accounts/{account_id}/apikeys/{api_key}
+    doc: |
+      Fetch an API Key in the specified Account.
+      
+      Requires `read:acl` scope in the Account.
+    
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
@@ -276,6 +289,12 @@ tests:
       status: 403
 
   -
+    title: DELETE /v1/accounts/{account_id}/apikeys/{api_key}
+    doc: |
+      Delete an API Key in the specified Account.
+      
+      Requires `delete:acl` scope in the Account.
+    
     request:
       method: DELETE
       url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
