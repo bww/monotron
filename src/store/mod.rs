@@ -104,13 +104,23 @@ impl Store {
     Ok(())
   }
   
-  pub async fn _check(&self) -> Result<String, error::Error> {
+  pub async fn fetch_account(&self, account_id: i64) -> Result<model::Account, error::Error> {
     let client = self.pool.get().await?;
-    let row = client
-      .query_one("SELECT $1::TEXT", &[&"Check"])
-      .await?;
-    let val: String = row.get(0);
-    Ok(val)
+    
+    let stream = client.query_raw("
+      SELECT a.id FROM mn_account AS a
+      WHERE a.id = $1",
+      slice_iter(&[
+        &account_id,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(model::Account::unmarshal(&row)?),
+      None => Err(error::Error::NotFoundError),
+    }
   }
   
   pub async fn store_authorization(&self, auth: &apikey::Authorization) -> Result<apikey::Authorization, error::Error> {
@@ -294,7 +304,7 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_entry(&self, auth: &apikey::Authorization, key: String) -> Result<entry::Entry, error::Error> {
+  pub async fn fetch_entry(&self, account_id: i64, key: String) -> Result<entry::Entry, error::Error> {
     let client = self.pool.get().await?;
     
     let stream = client.query_raw("
@@ -302,7 +312,7 @@ impl Store {
       WHERE key = $1 AND creator_id = $2",
       slice_iter(&[
         &key,
-        &auth.account_id,
+        &account_id,
       ])
     )
     .await?;
@@ -314,7 +324,7 @@ impl Store {
     }
   }
   
-  pub async fn fetch_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<entry::Entry, error::Error> {
+  pub async fn fetch_entry_version(&self, account_id: i64, key: String, token: String) -> Result<entry::Entry, error::Error> {
     let client = self.pool.get().await?;
     
     let stream = client.query_raw("
@@ -322,7 +332,7 @@ impl Store {
       WHERE key = $1 AND creator_id = $2 AND token = $3",
       slice_iter(&[
         &key,
-        &auth.account_id,
+        &account_id,
         &token,
       ])
     )
@@ -335,18 +345,18 @@ impl Store {
     }
   }
   
-  pub async fn delete_entry(&self, auth: &apikey::Authorization, key: String) -> Result<(), error::Error> {
+  pub async fn delete_entry(&self, account_id: i64, key: String) -> Result<(), error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
-    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
-    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &auth.account_id]).await?;
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
+    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     
     tx.commit().await?;
     Ok(())
   }
   
-  pub async fn inc_entry(&self, auth: &apikey::Authorization, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
+  pub async fn inc_entry(&self, account_id: i64, key: String, token: Option<String>) -> Result<entry::Entry, error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
@@ -356,7 +366,7 @@ impl Store {
       FOR UPDATE",
       slice_iter(&[
         &key,
-        &auth.account_id,
+        &account_id,
       ])
     )
     .await?;
@@ -382,7 +392,7 @@ impl Store {
       ON CONFLICT (key, creator_id) DO UPDATE SET token = $3, value = $4",
       &[
         &key,
-        &auth.account_id,
+        &account_id,
         &token,
         &update.value,
       ]
@@ -395,7 +405,7 @@ impl Store {
         ON CONFLICT (key, creator_id, token) DO UPDATE SET value = $4, updated_at = now()",
         &[
           &key,
-          &auth.account_id,
+          &account_id,
           &token,
           &update.value,
         ]

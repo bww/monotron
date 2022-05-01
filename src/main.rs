@@ -280,7 +280,7 @@ async fn handle_list_authorizations(account_id: i64, store: store::Store, auth: 
 
 async fn handle_fetch_entry(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
-  let entry = match store.fetch_entry(&auth, key).await {
+  let entry = match store.fetch_entry(account_id, key).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
@@ -289,7 +289,7 @@ async fn handle_fetch_entry(account_id: i64, key: String, store: store::Store, a
 
 async fn handle_delete_entry(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
-  match store.delete_entry(&auth, key).await {
+  match store.delete_entry(account_id, key).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
   }
@@ -297,7 +297,7 @@ async fn handle_delete_entry(account_id: i64, key: String, store: store::Store, 
 
 async fn handle_fetch_entry_version(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
-  let entry = match store.fetch_entry_version(&auth, key, token).await {
+  let entry = match store.fetch_entry_version(account_id, key, token).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
@@ -306,7 +306,7 @@ async fn handle_fetch_entry_version(account_id: i64, key: String, token: String,
 
 async fn handle_inc_entry(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
-  let entry = match store.inc_entry(&auth, key, Some(token)).await {
+  let entry = match store.inc_entry(account_id, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
