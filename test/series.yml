@@ -33,7 +33,7 @@ tests:
         password: secret123
       entity: |
         [
-          "read,write:entry"
+          "read,write,delete:entry"
         ]
 
     response:
@@ -42,7 +42,7 @@ tests:
       entity: |
         {
           "scopes": [
-            "read,write:entry"
+            "read,write,delete:entry"
           ]
         }
 
@@ -71,6 +71,29 @@ tests:
           "scopes": [
             "read:entry"
           ]
+        }
+
+  -
+    id: apikey3
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        []
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": []
         }
 
   -
@@ -114,4 +137,219 @@ tests:
           "key": "${vars.series_1}",
           "token": "000001",
           "value": 1
+        }
+
+  - # same token, same value as previous request
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey3.response.value.api_key.key}
+        password: ${apikey3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey3.response.value.api_key.key}
+        password: ${apikey3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000002
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000002",
+          "value": 2
+        }
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000003",
+          "value": 3
+        }
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 404
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000002",
+          "value": 2
         }
