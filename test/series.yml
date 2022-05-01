@@ -14,6 +14,7 @@ options:
 
 vars:
   account_id: 0
+  another_account_id: 1
   series_1: example-1
   series_2: example-2
 
@@ -122,6 +123,19 @@ tests:
   -
     request:
       method: PUT
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: PUT
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
       headers:
         Content-Type: application/json
@@ -185,6 +199,19 @@ tests:
   -
     request:
       method: GET
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
       headers:
         Content-Type: application/json
@@ -221,6 +248,19 @@ tests:
       basic-auth:
         username: ${apikey3.response.value.api_key.key}
         password: ${apikey3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
 
     response:
       status: 403
@@ -283,75 +323,6 @@ tests:
           "key": "${vars.series_1}",
           "token": "000003",
           "value": 3
-        }
-
-  -
-    request:
-      method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
-      headers:
-        Content-Type: application/json
-
-    response:
-      status: 401
-
-  -
-    request:
-      method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
-      headers:
-        Content-Type: application/json
-      basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
-
-    response:
-      status: 403
-
-  -
-    request:
-      method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
-      headers:
-        Content-Type: application/json
-      basic-auth:
-        username: ${apikey1.response.value.api_key.key}
-        password: ${apikey1.response.value.api_key.secret}
-
-    response:
-      status: 200
-
-  -
-    request:
-      method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
-      headers:
-        Content-Type: application/json
-      basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
-
-    response:
-      status: 404
-
-  -
-    request:
-      method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
-      headers:
-        Content-Type: application/json
-      basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
-
-    response:
-      status: 200
-      compare: semantic
-      entity: |
-        {
-          "key": "${vars.series_1}",
-          "token": "000002",
-          "value": 2
         }
 
   -

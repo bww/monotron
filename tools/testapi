@@ -22,7 +22,7 @@ export ROOT_API_SECRET=secret123
 # defaults
 component=monotron
 hostname=localhost
-exec_cmd="cargo run"
+exec_cmd="$project_home/target/debug/monotron"
 test_root="$project_home/test"
 
 # parse arguments
@@ -40,8 +40,12 @@ for i; do
   esac
 done
 
+# build the target
+(cd "$project_home/" && cargo build)
+# cycle database
 $me_home/cycledb
 
+# run integration tests
 if [ ! -z "$packages" ]; then \
   $INSTAUNIT $extra_flags \
     -base-url "http://$hostname:3030/" \

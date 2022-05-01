@@ -402,17 +402,6 @@ impl Store {
     Ok(update)
   }
   
-  pub async fn delete_entry_version(&self, auth: &apikey::Authorization, key: String, token: String) -> Result<(), error::Error> {
-    let mut client = self.pool.get().await?;
-    let tx = client.transaction().await?;
-    
-    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
-    tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2 AND token = $3", &[&key, &auth.account_id, &token]).await?;
-    
-    tx.commit().await?;
-    Ok(())
-  }
-  
 }
 
 fn slice_iter<'a>(
