@@ -11,6 +11,7 @@ use crate::acl;
 #[derive(Debug)]
 pub enum Error {
   NotFoundError,
+  MarshalError,
   URLParseError(url::ParseError),
   IOError(io::Error),
   PostgresError(tokio_postgres::Error),
@@ -54,6 +55,7 @@ impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Self::NotFoundError => "not_found".fmt(f),
+      Self::MarshalError => "marshal_error".fmt(f),
       Self::URLParseError(err) => err.fmt(f),
       Self::IOError(err) => err.fmt(f),
       Self::PostgresError(err) => err.fmt(f),

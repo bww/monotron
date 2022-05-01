@@ -117,6 +117,11 @@ impl Store {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
+    let account_id = match auth.account_id {
+      Some(account_id) => account_id,
+      None => return Err(error::Error::MarshalError),
+    };
+    
     let api_key_id: i64 = match tx.query_one(
       "INSERT INTO mn_api_key (key, secret) VALUES ($1, $2) RETURNING id",
       &[
@@ -132,7 +137,7 @@ impl Store {
       INSERT INTO mn_account_r_api_key (account_id, api_key_id, scopes) VALUES ($1, $2, $3)
       ON CONFLICT (account_id, api_key_id) DO UPDATE SET scopes = $3",
       &[
-        &auth.account_id,
+        &account_id,
         &api_key_id,
         &auth.scopes.scopes(),
       ]
@@ -140,7 +145,7 @@ impl Store {
     
     tx.commit().await?;
     Ok(apikey::Authorization{
-      account_id: auth.account_id,
+      account_id: Some(account_id),
       scopes: auth.scopes.clone(),
       api_key: auth.api_key.with_id(api_key_id),
     })
