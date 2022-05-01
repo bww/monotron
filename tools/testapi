@@ -42,6 +42,8 @@ done
 
 # build the target
 (cd "$project_home/" && cargo build)
+# cycledb
+$me_home/cycledb
 # packages from the command line
 packages=$*
 
