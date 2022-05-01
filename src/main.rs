@@ -62,7 +62,12 @@ async fn main() -> Result<(), error::Error> {
     None => None,
   };
   
-  println!("----> Connecting to database");
+  if conf.debug {
+    println!("----> Connecting to database: {}", conf.db_dsn);
+  }else{
+    println!("----> Connecting to database");
+  }
+  
   let store = store::Store::new(&conf.db_dsn).await?;
   let store_filter = warp::any().map(move || store.clone());
   let root_filter = warp::any().map(move || root.clone());
