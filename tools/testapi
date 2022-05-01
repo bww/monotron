@@ -42,8 +42,8 @@ done
 
 # build the target
 (cd "$project_home/" && cargo build)
-# cycle database
-$me_home/cycledb
+# packages from the command line
+packages=$*
 
 # run integration tests
 if [ ! -z "$packages" ]; then \

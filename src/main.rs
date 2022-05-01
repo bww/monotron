@@ -80,6 +80,12 @@ async fn main() -> Result<(), error::Error> {
     .and_then(handle_v1)
     .with(&json_content);
   
+  let fetch_account = warp::path!("v1" / "accounts" / i64)
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_fetch_account)
+    .with(&json_content);
+  
   let create_authorization = warp::path!("v1" / "accounts" / i64 / "grants")
     .and(store_filter.clone())
     .and(auth_filter.clone())
@@ -131,6 +137,7 @@ async fn main() -> Result<(), error::Error> {
   
   let gets = warp::get().and(
     v1
+      .or(fetch_account)
       .or(list_authorizations)
       .or(fetch_authorization)
       .or(fetch_entry)
@@ -234,6 +241,14 @@ async fn handle_auth(store: store::Store, root: Option<apikey::Authorization>, h
 
 async fn handle_v1(_store: store::Store) -> Result<impl warp::Reply, warp::Rejection> {
   Ok(warp::reply::with_status("API v1", http::StatusCode::OK))
+}
+
+async fn handle_fetch_account(account_id: i64, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Account)?;
+  match store.fetch_account(account_id).await {
+    Ok(account) => Ok(warp::reply::with_status(warp::reply::Response::new(json!(account).to_string().into()), http::StatusCode::OK)),
+    Err(err) => Err(err.into()),
+  }
 }
 
 async fn handle_create_authorization(account_id: i64, store: store::Store, auth: apikey::Authorization, scopes: acl::scope::Scopes) -> Result<impl warp::Reply, warp::Rejection> {

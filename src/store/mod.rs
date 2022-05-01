@@ -4,6 +4,7 @@ use bb8_postgres;
 use tokio_postgres;
 use futures::{pin_mut, TryStreamExt};
 
+use crate::model::account;
 use crate::model::entry;
 use crate::model::apikey;
 
@@ -104,7 +105,7 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_account(&self, account_id: i64) -> Result<model::Account, error::Error> {
+  pub async fn fetch_account(&self, account_id: i64) -> Result<account::Account, error::Error> {
     let client = self.pool.get().await?;
     
     let stream = client.query_raw("
@@ -118,7 +119,7 @@ impl Store {
     pin_mut!(stream);
     
     match stream.try_next().await? {
-      Some(row) => Ok(model::Account::unmarshal(&row)?),
+      Some(row) => Ok(account::Account::unmarshal(&row)?),
       None => Err(error::Error::NotFoundError),
     }
   }

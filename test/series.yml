@@ -12,6 +12,11 @@ options:
     - Content-Type
     - Content-Length
 
+setup:
+  - run: tools/cycledb
+    environment:
+      ENVIRON: integration
+
 vars:
   account_id: 0
   another_account_id: 1
