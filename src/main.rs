@@ -13,7 +13,6 @@ use crate::model::apikey::{self, Authenticate, AccessControl};
 
 static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
-const DEFAULT_ACCOUNT: i64 = 0;
 const HEADER_AUTHORIZATION: &str = "Authorization";
 
 #[derive(Envconfig)]
