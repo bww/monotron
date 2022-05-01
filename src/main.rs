@@ -9,7 +9,7 @@ use envconfig::Envconfig;
 use once_cell::sync;
 use serde_json::json;
 
-use crate::model::apikey::{self, AccessControl};
+use crate::model::apikey::{self, Authenticate, AccessControl};
 
 static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
@@ -80,26 +80,26 @@ async fn main() -> Result<(), error::Error> {
     .and_then(handle_v1)
     .with(&json_content);
   
-  let create_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys")
+  let create_authorization = warp::path!("v1" / "accounts" / i64 / "grants")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::json())
     .and_then(handle_create_authorization)
     .with(&json_content);
   
-  let list_authorizations = warp::path!("v1" / "accounts" / i64 / "apikeys")
+  let list_authorizations = warp::path!("v1" / "accounts" / i64 / "grants")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_list_authorizations)
     .with(&json_content);
   
-  let fetch_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys" / String)
+  let fetch_authorization = warp::path!("v1" / "accounts" / i64 / "grants" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_fetch_authorization)
     .with(&json_content);
   
-  let delete_authorization = warp::path!("v1" / "accounts" / i64 / "apikeys" / String)
+  let delete_authorization = warp::path!("v1" / "accounts" / i64 / "grants" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and_then(handle_delete_authorization)

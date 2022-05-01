@@ -79,6 +79,10 @@ pub fn parse_apikey(data: &str) -> Result<(String, String), Error> {
   Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
+pub trait Authenticate {
+  fn auth(&self, key: &str, secret: &str) -> bool;
+}
+
 pub trait AccessControl {
   fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool;
   fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error>;
@@ -100,16 +104,18 @@ impl ApiKey {
     })
   }
   
-  pub fn auth(&self, key: &str, secret: &str) -> bool {
-    self.key == key && self.secret == secret
-  }
-  
   pub fn with_id(&self, id: i64) -> Self {
     Self{
       id: id,
       key: self.key.to_owned(),
       secret: self.secret.to_owned(),
     }
+  }
+}
+
+impl Authenticate for ApiKey {
+  fn auth(&self, key: &str, secret: &str) -> bool {
+    self.key == key && self.secret == secret
   }
 }
 
@@ -121,9 +127,9 @@ impl warp::Reply for ApiKey {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Authorization {
-  pub api_key: ApiKey,
   pub account_id: i64,
   pub scopes: scope::Scopes,
+  pub api_key: ApiKey,
 }
 
 impl Authorization {
@@ -135,13 +141,23 @@ impl Authorization {
       Vec::new()
     };
     Ok(Authorization{
-      api_key: ApiKey::unmarshal(row)?,
       account_id: row.try_get(3)?,
       scopes: scope::Scopes::new(scope_set),
+      api_key: ApiKey::unmarshal(row)?,
     })
   }
   
-  pub fn auth(&self, key: &str, secret: &str) -> bool {
+  pub fn with_account(&self, account_id: i64) -> Self {
+    Authorization{
+      account_id: account_id,
+      api_key: self.api_key.clone(),
+      scopes: self.scopes.clone(),
+    }
+  }
+}
+
+impl Authenticate for Authorization {
+  fn auth(&self, key: &str, secret: &str) -> bool {
     self.api_key.auth(key, secret)
   }
 }

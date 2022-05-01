@@ -21,7 +21,7 @@ tests:
   -
     request:
       method: POST
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       entity: |
@@ -33,10 +33,10 @@ tests:
       status: 401
   
   -
-    id: apikey1
+    id: grant1
     require: true
     
-    title: POST /v1/accounts/{account_id}/apikeys
+    title: POST /v1/accounts/{account_id}/grants
     doc: |
       Create an API Key in the specified Account.
       
@@ -44,7 +44,7 @@ tests:
     
     request:
       method: POST
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
@@ -66,12 +66,12 @@ tests:
         }
 
   -
-    id: apikey2
+    id: grant2
     require: true
     
     request:
       method: POST
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
@@ -93,12 +93,12 @@ tests:
         }
 
   -
-    id: apikey3
+    id: grant3
     require: true
     
     request:
       method: POST
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
@@ -119,15 +119,15 @@ tests:
           ]
         }
 
-  - # apikey1 does not have system access and cannot create more api keys
+  - # grant1 does not have system access and cannot create more api keys
     request:
       method: POST
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey1.response.value.api_key.key}
-        password: ${apikey1.response.value.api_key.secret}
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
       entity: |
         [
           "read,write:entry"
@@ -139,7 +139,7 @@ tests:
   -
     request:
       method: POST
-      url: /v1/accounts/${vars.another_account_id}/apikeys
+      url: /v1/accounts/${vars.another_account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
@@ -156,22 +156,22 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
 
     response:
       status: 401
 
-  - # apikey1 does not have system access and cannot list api keys
+  - # grant1 does not have system access and cannot list api keys
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey1.response.value.api_key.key}
-        password: ${apikey1.response.value.api_key.secret}
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
 
     response:
       status: 403
@@ -179,18 +179,18 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.another_account_id}/apikeys
+      url: /v1/accounts/${vars.another_account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 403
 
   -
-    title: GET /v1/accounts/{account_id}/apikeys
+    title: GET /v1/accounts/{account_id}/grants
     doc: |
       List API Keys in the specified Account.
       
@@ -198,12 +198,12 @@ tests:
     
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 200
@@ -212,9 +212,9 @@ tests:
         [
           {
             "api_key": {
-              "id": ${apikey1.response.value.api_key.id},
-              "key": "${apikey1.response.value.api_key.key}",
-              "secret": "${apikey1.response.value.api_key.secret}"
+              "id": ${grant1.response.value.api_key.id},
+              "key": "${grant1.response.value.api_key.key}",
+              "secret": "${grant1.response.value.api_key.secret}"
             },
             "scopes": [
               "read,write:entry"
@@ -222,9 +222,9 @@ tests:
           },
           {
             "api_key": {
-              "id": ${apikey2.response.value.api_key.id},
-              "key": "${apikey2.response.value.api_key.key}",
-              "secret": "${apikey2.response.value.api_key.secret}"
+              "id": ${grant2.response.value.api_key.id},
+              "key": "${grant2.response.value.api_key.key}",
+              "secret": "${grant2.response.value.api_key.secret}"
             },
             "scopes": [
               "read,write:acl"
@@ -232,9 +232,9 @@ tests:
           },
           {
             "api_key": {
-              "id": ${apikey3.response.value.api_key.id},
-              "key": "${apikey3.response.value.api_key.key}",
-              "secret": "${apikey3.response.value.api_key.secret}"
+              "id": ${grant3.response.value.api_key.id},
+              "key": "${grant3.response.value.api_key.key}",
+              "secret": "${grant3.response.value.api_key.secret}"
             },
             "scopes": [
               "*:acl"
@@ -245,7 +245,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
 
@@ -255,12 +255,12 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey1.response.value.api_key.key}
-        password: ${apikey1.response.value.api_key.secret}
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
 
     response:
       status: 403
@@ -268,18 +268,18 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.another_account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.another_account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 403
 
   -
-    title: GET /v1/accounts/{account_id}/apikeys/{api_key}
+    title: GET /v1/accounts/{account_id}/grants/{api_key}
     doc: |
       Fetch an API Key in the specified Account.
       
@@ -287,12 +287,12 @@ tests:
     
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 200
@@ -300,9 +300,9 @@ tests:
       entity: |
         {
           "api_key": {
-            "id": ${apikey1.response.value.api_key.id},
-            "key": "${apikey1.response.value.api_key.key}",
-            "secret": "${apikey1.response.value.api_key.secret}"
+            "id": ${grant1.response.value.api_key.id},
+            "key": "${grant1.response.value.api_key.key}",
+            "secret": "${grant1.response.value.api_key.secret}"
           },
           "scopes": [
             "read,write:entry"
@@ -312,22 +312,22 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
 
     response:
       status: 401
 
-  - # apikey2 has rights to create api keys but not delete them
+  - # grant2 has rights to create api keys but not delete them
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 403
@@ -335,18 +335,18 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.another_account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.another_account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey3.response.value.api_key.key}
-        password: ${apikey3.response.value.api_key.secret}
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
 
     response:
       status: 403
 
   -
-    title: DELETE /v1/accounts/{account_id}/apikeys/{api_key}
+    title: DELETE /v1/accounts/{account_id}/grants/{api_key}
     doc: |
       Delete an API Key in the specified Account.
       
@@ -354,12 +354,12 @@ tests:
     
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey3.response.value.api_key.key}
-        password: ${apikey3.response.value.api_key.secret}
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
 
     response:
       status: 200
@@ -367,12 +367,12 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys/${apikey1.response.value.api_key.key}
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 404
@@ -380,12 +380,12 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/apikeys
+      url: /v1/accounts/${vars.account_id}/grants
       headers:
         Content-Type: application/json
       basic-auth:
-        username: ${apikey2.response.value.api_key.key}
-        password: ${apikey2.response.value.api_key.secret}
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 200
@@ -394,9 +394,9 @@ tests:
         [
           {
             "api_key": {
-              "id": ${apikey2.response.value.api_key.id},
-              "key": "${apikey2.response.value.api_key.key}",
-              "secret": "${apikey2.response.value.api_key.secret}"
+              "id": ${grant2.response.value.api_key.id},
+              "key": "${grant2.response.value.api_key.key}",
+              "secret": "${grant2.response.value.api_key.secret}"
             },
             "scopes": [
               "read,write:acl"
@@ -404,9 +404,9 @@ tests:
           },
           {
             "api_key": {
-              "id": ${apikey3.response.value.api_key.id},
-              "key": "${apikey3.response.value.api_key.key}",
-              "secret": "${apikey3.response.value.api_key.secret}"
+              "id": ${grant3.response.value.api_key.id},
+              "key": "${grant3.response.value.api_key.key}",
+              "secret": "${grant3.response.value.api_key.secret}"
             },
             "scopes": [
               "*:acl"
