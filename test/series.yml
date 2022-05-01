@@ -1,0 +1,117 @@
+
+title: Monotonic Series
+
+options:
+  table-of-contents: y
+  
+  rewrite-headers:
+    Host: api.treno.io
+  
+  allow-headers:
+    - Host
+    - Content-Type
+    - Content-Length
+
+vars:
+  account_id: 0
+  series_1: example-1
+  series_2: example-2
+
+tests:
+  
+  -
+    id: apikey1
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read,write:entry"
+          ]
+        }
+
+  -
+    id: apikey2
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read:entry"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read:entry"
+          ]
+        }
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey1.response.value.api_key.key}
+        password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }

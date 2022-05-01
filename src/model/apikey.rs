@@ -144,7 +144,7 @@ impl Authorization {
     self.scopes.allows(op, rc)
   }
   
-  pub fn assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
+  fn _assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
     if self.allows(op, rc) {
       Ok(())
     }else{
