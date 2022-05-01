@@ -127,7 +127,7 @@ impl warp::Reply for ApiKey {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Authorization {
-  pub account_id: i64,
+  pub account_id: Option<i64>,
   pub scopes: scope::Scopes,
   pub api_key: ApiKey,
 }
@@ -141,18 +141,10 @@ impl Authorization {
       Vec::new()
     };
     Ok(Authorization{
-      account_id: row.try_get(3)?,
+      account_id: Some(row.try_get(3)?),
       scopes: scope::Scopes::new(scope_set),
       api_key: ApiKey::unmarshal(row)?,
     })
-  }
-  
-  pub fn with_account(&self, account_id: i64) -> Self {
-    Authorization{
-      account_id: account_id,
-      api_key: self.api_key.clone(),
-      scopes: self.scopes.clone(),
-    }
   }
 }
 
@@ -168,8 +160,10 @@ impl AccessControl for Authorization {
   }
   
   fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
-    if self.account_id != account_id {
-      return Err(Error::Forbidden(format!("Account mismatch: {} != {}", self.account_id, account_id)))
+    if let Some(verify_id) = self.account_id {
+      if verify_id != account_id {
+        return Err(Error::Forbidden(format!("Account mismatch: {} != {}", verify_id, account_id)))
+      }
     }
     if !self.allows(op, rc) {
       return Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))

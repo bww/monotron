@@ -32,7 +32,7 @@ pub struct Config {
 
 fn root_authorization(key: String, secret: String) -> apikey::Authorization {
   apikey::Authorization{
-    account_id: DEFAULT_ACCOUNT,
+    account_id: None, // global, no account binding
     scopes: acl::scope::Scopes::new(vec!(
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::ACL),
@@ -240,7 +240,7 @@ async fn handle_create_authorization(account_id: i64, store: store::Store, auth:
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::ACL)?;
   let (key, secret) = apikey::gen_apikey();
   let create = apikey::Authorization{
-    account_id: account_id,
+    account_id: Some(account_id),
     scopes: scopes,
     api_key: apikey::ApiKey{
       id: 0,
