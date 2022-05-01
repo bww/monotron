@@ -9,7 +9,7 @@ use envconfig::Envconfig;
 use once_cell::sync;
 use serde_json::json;
 
-use crate::model::apikey;
+use crate::model::apikey::{self, AccessControl};
 
 static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 

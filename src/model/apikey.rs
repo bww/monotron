@@ -79,6 +79,11 @@ pub fn parse_apikey(data: &str) -> Result<(String, String), Error> {
   Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
+pub trait AccessControl {
+  fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool;
+  fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error>;
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiKey {
   pub id: i64,
@@ -139,20 +144,14 @@ impl Authorization {
   pub fn auth(&self, key: &str, secret: &str) -> bool {
     self.api_key.auth(key, secret)
   }
-  
-  pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
+}
+
+impl AccessControl for Authorization {
+  fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
     self.scopes.allows(op, rc)
   }
   
-  fn _assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
-    if self.allows(op, rc) {
-      Ok(())
-    }else{
-      Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
-    }
-  }
-  
-  pub fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
+  fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
     if self.account_id != account_id {
       return Err(Error::Forbidden(format!("Account mismatch: {} != {}", self.account_id, account_id)))
     }
