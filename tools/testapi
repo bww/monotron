@@ -11,7 +11,7 @@ me_home=$(cd "$me_home" && pwd)
 project_home=$(cd "$me_home/.." && pwd)
 
 # environment
-export ENVIRON=integrate
+export ENVIRON=integration
 export DB_DSN=postgresql://postgres@localhost/monotron_$ENVIRON?connect_timeout=5
 export ROOT_API_KEY=testapi
 export ROOT_API_SECRET=secret123
