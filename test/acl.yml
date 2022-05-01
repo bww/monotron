@@ -14,6 +14,7 @@ options:
 
 vars:
   account_id: 0
+  another_account_id: 1
 
 tests:
   
@@ -137,6 +138,23 @@ tests:
 
   -
     request:
+      method: POST
+      url: /v1/accounts/${vars.another_account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 403
+
+  -
+    request:
       method: GET
       url: /v1/accounts/${vars.account_id}/apikeys
       headers:
@@ -154,6 +172,19 @@ tests:
       basic-auth:
         username: ${apikey1.response.value.api_key.key}
         password: ${apikey1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/apikeys
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
 
     response:
       status: 403
@@ -235,6 +266,19 @@ tests:
       status: 403
 
   -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey2.response.value.api_key.key}
+        password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
     title: GET /v1/accounts/{account_id}/apikeys/{api_key}
     doc: |
       Fetch an API Key in the specified Account.
@@ -284,6 +328,19 @@ tests:
       basic-auth:
         username: ${apikey2.response.value.api_key.key}
         password: ${apikey2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.another_account_id}/apikeys/${apikey1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${apikey3.response.value.api_key.key}
+        password: ${apikey3.response.value.api_key.secret}
 
     response:
       status: 403
