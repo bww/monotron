@@ -365,8 +365,8 @@ tests:
     title: DELETE /v1/accounts/{account_id}/series/{series_id}
     doc: |
       Delete a Series. This will delete the entire history of the
-      series. You may reuse the Series after it has been deleted and
-      the value will reset to `1`.
+      Series. You may reuse the Series after it has been deleted and
+      the value will be reset to `1`.
       
       Requires `delete:entry` scope in the Account.
       
