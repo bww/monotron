@@ -1,0 +1,361 @@
+
+title: Monotonic Series
+
+options:
+  table-of-contents: y
+  
+  rewrite-headers:
+    Host: api.treno.io
+  
+  allow-headers:
+    - Host
+    - Content-Type
+    - Content-Length
+
+setup:
+  - run: tools/truncate mn_api_key
+    environment:
+      ENVIRON: integration
+
+vars:
+  account_id: 0
+  another_account_id: 1
+  series_1: example-1
+  series_2: example-2
+
+tests:
+  
+  -
+    id: grant1
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write,delete:entry"
+        ]
+
+    response:
+      status: 200
+
+  -
+    id: grant2
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read:entry"
+        ]
+
+    response:
+      status: 200
+
+  -
+    id: grant3
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        []
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  - # same token, same value as previous request
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000001",
+          "value": 1
+        }
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000002
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000002",
+          "value": 2
+        }
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000003
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "key": "${vars.series_1}",
+          "token": "000003",
+          "value": 3
+        }
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 404

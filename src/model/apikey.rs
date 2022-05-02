@@ -2,6 +2,8 @@ use std::fmt;
 use std::str;
 
 use rand::{self, Rng};
+use serde::{Serialize, Deserialize};
+use serde_json::json;
 use tokio_postgres;
 
 use crate::store;
@@ -77,70 +79,101 @@ pub fn parse_apikey(data: &str) -> Result<(String, String), Error> {
   Ok((parts[0].to_string(), parts[1].to_string()))
 }
 
-#[derive(Debug, Clone, PartialEq)]
+pub trait Authenticate {
+  fn auth(&self, key: &str, secret: &str) -> bool;
+}
+
+pub trait AccessControl {
+  fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool;
+  fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error>;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ApiKey {
   pub id: i64,
   pub key: String,
   pub secret: String,
-  pub scopes: scope::Scopes,
 }
 
 impl ApiKey {
   pub fn unmarshal(row: &tokio_postgres::Row) -> Result<ApiKey, store::error::Error> {
-    let scope_specs: Vec<String> = row.try_get(3)?;
+    Ok(Self{
+      id: row.try_get(0)?,
+      key: row.try_get(1)?,
+      secret: row.try_get(2)?,
+    })
+  }
+  
+  pub fn with_id(&self, id: i64) -> Self {
+    Self{
+      id: id,
+      key: self.key.to_owned(),
+      secret: self.secret.to_owned(),
+    }
+  }
+}
+
+impl Authenticate for ApiKey {
+  fn auth(&self, key: &str, secret: &str) -> bool {
+    self.key == key && self.secret == secret
+  }
+}
+
+impl warp::Reply for ApiKey {
+  fn into_response(self) -> warp::reply::Response {
+    warp::reply::Response::new(json!(self).to_string().into())
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Authorization {
+  pub account_id: Option<i64>,
+  pub scopes: scope::Scopes,
+  pub api_key: ApiKey,
+}
+
+impl Authorization {
+  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
+    let scope_specs: Vec<String> = row.try_get(4)?;
     let scope_set: Vec<scope::Scope> = if scope_specs.len() > 0 {
       scope::Scope::parse_set(scope_specs)?
     }else{
       Vec::new()
     };
-    Ok(ApiKey{
-      id: row.try_get(0)?,
-      key: row.try_get(1)?,
-      secret: row.try_get(2)?,
+    Ok(Authorization{
+      account_id: Some(row.try_get(3)?),
       scopes: scope::Scopes::new(scope_set),
+      api_key: ApiKey::unmarshal(row)?,
     })
   }
-  
-  pub fn auth(&self, key: &str, secret: &str) -> bool {
-    self.key == key && self.secret == secret
+}
+
+impl Authenticate for Authorization {
+  fn auth(&self, key: &str, secret: &str) -> bool {
+    self.api_key.auth(key, secret)
   }
-  
-  pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
+}
+
+impl AccessControl for Authorization {
+  fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
     self.scopes.allows(op, rc)
   }
   
-  pub fn assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
-    if self.allows(op, rc) {
-      Ok(())
-    }else{
-      Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
+  fn assert_allows_in_account(&self, account_id: i64, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
+    if let Some(verify_id) = self.account_id {
+      if verify_id != account_id {
+        return Err(Error::Forbidden(format!("Account mismatch: {} != {}", verify_id, account_id)))
+      }
     }
+    if !self.allows(op, rc) {
+      return Err(Error::Forbidden(format!("{} cannot satisfy: {}:{}", self.scopes, op, rc)))
+    }
+    Ok(())
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Authorization {
-  pub api_key: ApiKey,
-  pub account_id: i64,
-}
-
-impl Authorization {
-  pub fn unmarshal(row: &tokio_postgres::Row) -> Result<Authorization, store::error::Error> {
-    Ok(Authorization{
-      api_key: ApiKey::unmarshal(row)?,
-      account_id: row.try_get(4)?,
-    })
-  }
-  
-  pub fn auth(&self, key: &str, secret: &str) -> bool {
-    self.api_key.auth(key, secret)
-  }
-  
-  pub fn allows(&self, op: scope::Operation, rc: scope::Resource) -> bool {
-    self.api_key.allows(op, rc)
-  }
-  
-  pub fn assert_allows(&self, op: scope::Operation, rc: scope::Resource) -> Result<(), Error> {
-    self.api_key.assert_allows(op, rc)
+impl warp::Reply for Authorization {
+  fn into_response(self) -> warp::reply::Response {
+    warp::reply::Response::new(json!(self).to_string().into())
   }
 }

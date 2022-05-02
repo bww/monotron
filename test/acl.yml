@@ -1,0 +1,423 @@
+
+title: Access Control Management
+
+options:
+  table-of-contents: y
+  
+  rewrite-headers:
+    Host: api.treno.io
+  
+  allow-headers:
+    - Host
+    - Content-Type
+    - Content-Length
+
+setup:
+  - run: tools/truncate mn_api_key
+    environment:
+      ENVIRON: integration
+
+vars:
+  account_id: 0
+  another_account_id: 1
+
+tests:
+  
+  -
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 401
+  
+  -
+    id: grant1
+    require: true
+    
+    title: POST /v1/accounts/{account_id}/grants
+    doc: |
+      Create an API Key in the specified Account.
+      
+      Requires `write:acl` scope in the Account.
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read,write:entry"
+          ]
+        }
+
+  -
+    id: grant2
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "read,write:acl"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "read,write:acl"
+          ]
+        }
+
+  -
+    id: grant3
+    require: true
+    
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: testapi
+        password: secret123
+      entity: |
+        [
+          "*:acl"
+        ]
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "scopes": [
+            "*:acl"
+          ]
+        }
+
+  - # grant1 does not have system access and cannot create more api keys
+    request:
+      method: POST
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+      entity: |
+        [
+          "read,write:entry"
+        ]
+
+    response:
+      status: 403
+
+  # This test doesn't work as expected: global authoriation will permit
+  # the creation of an authorization in a nonexistent account, which causes
+  # a DB error. This shoudln't really happen in practice.
+  # -
+  #   request:
+  #     method: POST
+  #     url: /v1/accounts/${vars.another_account_id}/grants
+  #     headers:
+  #       Content-Type: application/json
+  #     basic-auth:
+  #       username: testapi
+  #       password: secret123
+  #     entity: |
+  #       [
+  #         "read,write:entry"
+  #       ]
+  # 
+  #   response:
+  #     status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  - # grant1 does not have system access and cannot list api keys
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: GET /v1/accounts/{account_id}/grants
+    doc: |
+      List API Keys in the specified Account.
+      
+      Requires `read:acl` scope in the Account.
+    
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        [
+          {
+            "api_key": {
+              "id": ${grant1.response.value.api_key.id},
+              "key": "${grant1.response.value.api_key.key}",
+              "secret": "${grant1.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:entry"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${grant2.response.value.api_key.id},
+              "key": "${grant2.response.value.api_key.key}",
+              "secret": "${grant2.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:acl"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${grant3.response.value.api_key.id},
+              "key": "${grant3.response.value.api_key.key}",
+              "secret": "${grant3.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "*:acl"
+            ]
+          }
+        ]
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.another_account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: GET /v1/accounts/{account_id}/grants/{api_key}
+    doc: |
+      Fetch an API Key in the specified Account.
+      
+      Requires `read:acl` scope in the Account.
+    
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        {
+          "api_key": {
+            "id": ${grant1.response.value.api_key.id},
+            "key": "${grant1.response.value.api_key.key}",
+            "secret": "${grant1.response.value.api_key.secret}"
+          },
+          "scopes": [
+            "read,write:entry"
+          ]
+        }
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+
+    response:
+      status: 401
+
+  - # grant2 has rights to create api keys but not delete them
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.another_account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: DELETE /v1/accounts/{account_id}/grants/{api_key}
+    doc: |
+      Delete an API Key in the specified Account.
+      
+      Requires `delete:acl` scope in the Account.
+    
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants/${grant1.response.value.api_key.key}
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 404
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/grants
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 200
+      compare: semantic
+      entity: |
+        [
+          {
+            "api_key": {
+              "id": ${grant2.response.value.api_key.id},
+              "key": "${grant2.response.value.api_key.key}",
+              "secret": "${grant2.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "read,write:acl"
+            ]
+          },
+          {
+            "api_key": {
+              "id": ${grant3.response.value.api_key.id},
+              "key": "${grant3.response.value.api_key.key}",
+              "secret": "${grant3.response.value.api_key.secret}"
+            },
+            "scopes": [
+              "*:acl"
+            ]
+          }
+        ]

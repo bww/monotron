@@ -7,6 +7,7 @@ use warp;
 use postgres;
 use tokio_postgres;
 use tokio_postgres::types::to_sql_checked;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -27,7 +28,7 @@ impl fmt::Display for Error {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Operation {
   Read, Write, Delete, Every,
 }
@@ -63,20 +64,22 @@ impl fmt::Display for Operation {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Resource {
   System,
   ACL,
+  Account,
   Entry,
 }
 
 impl Resource {
   pub fn parse(s: &str) -> Result<Resource, Error> {
     match s.trim().to_lowercase().as_ref() {
-      "system" => Ok(Resource::System),
-      "acl"    => Ok(Resource::ACL),
-      "entry"  => Ok(Resource::Entry),
-      _        => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
+      "system"  => Ok(Resource::System),
+      "acl"     => Ok(Resource::ACL),
+      "account" => Ok(Resource::Account),
+      "entry"   => Ok(Resource::Entry),
+      _         => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
     }
   }
 }
@@ -84,9 +87,10 @@ impl Resource {
 impl fmt::Display for Resource {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Resource::System => write!(f, "system"),
-      Resource::ACL    => write!(f, "acl"),
-      Resource::Entry  => write!(f, "entry"),
+      Resource::System  => write!(f, "system"),
+      Resource::ACL     => write!(f, "acl"),
+      Resource::Account => write!(f, "account"),
+      Resource::Entry   => write!(f, "entry"),
     }
   }
 }
@@ -136,6 +140,42 @@ impl Scope {
       }
     }
     false
+  }
+}
+
+impl Serialize for Scope {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(&self.to_string())
+  }
+}
+
+impl<'de> Deserialize<'de> for Scope {
+  fn deserialize<D>(deserializer: D) -> Result<Scope, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    struct ScopeVisitor;
+    impl<'de> serde::de::Visitor<'de> for ScopeVisitor {
+      type Value = Scope;
+
+      fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a scope")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<Scope, E>
+      where
+        E: serde::de::Error,
+      {
+        match Scope::parse(value) {
+          Ok(scope) => Ok(scope),
+          Err(err) => Err(serde::de::Error::custom(err.to_string())),
+        }
+      }
+    }
+    deserializer.deserialize_identifier(ScopeVisitor)
   }
 }
 
@@ -199,7 +239,7 @@ impl fmt::Display for Scope {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Scopes(Vec<Scope>);
 
 impl Scopes {
@@ -214,6 +254,10 @@ impl Scopes {
       }
     }
     false
+  }
+  
+  pub fn scopes(&self) -> Vec<Scope> {
+    self.0.to_owned()
   }
 }
 
