@@ -31,16 +31,16 @@ Content-Length: 25
 
 ```http
 HTTP/1.1 200 OK
+Date: Mon, 02 May 2022 13:23:11 GMT
 Content-Type: application/json
 Content-Length: 238
-Date: Mon, 02 May 2022 13:18:58 GMT
 
 {
   "account_id": 0,
   "api_key": {
     "id": 2,
-    "key": "RwaeAGyByDYXWTgmr0hy03eK",
-    "secret": "vtS3RtbCRVSGxpje1xskTweo2Q3mW4HukrJRb1sqKBUnVIMzD5oCuC6LLf1KLoH00ep6DKgK8otWMsT4lWWagahZ97wHl4t7eRrXcGSHAr5dJfqSkJYGe7RMTznAwGMB"
+    "key": "nPhhOGVyh86y4q31F0WuBgTT",
+    "secret": "IBhw0dbUhOdjL4HyPQ3WpWWq6SILq9gfrujrnuLYbS0hBGLte2FpCnwQ2qGuk3CwGFWXaeTTTnodxtasDrUCIZYF7GM9B4Z8DYERbWPVriQD3FbStsmJzJStnsPd4Bif"
   },
   "scopes": [
     "read,write:entry"
@@ -61,7 +61,7 @@ Requires `read:acl` scope in the Account.
 GET /v1/accounts/0/grants HTTP/1.1
 Host: localhost:3030
 Content-Type: application/json
-Authorization: Basic WU4xYlJTdUR0QjNvNDhkWXdKSTdYN0lwOnZOUnBKTHpQN3RFRFFaRjVwRjloSDdJOGNqeFhnNUZmamVBTlJhVkt4cDlTZ3Vvd2JQU0lEQlFMMW9uTGEwa2Z0ZE50WVlYc2dBM1E5T0ZwV3F4ckhJTWlUZ3loNldkanlQMVBMdGN6N2lpVDlNYmt1enlFQnp6TFFjbGR2TTFa
+Authorization: Basic Nm9vczlxOVRRWDRRVUo1WFlHRE41N1RyOnVoUEl2UTNLUXYyNEpKQ3Vpb3lPSkFwSENSbW5nS3lTenVYQ3N3RjN5OW1lR095b05XbFN5SHhKaXlQTm05eTRLdHhjOTJKWG9wMDlRa3RDQ1pFTml1NUdkWDZaMlBOVHNSTXRiMGpyYlJBTGtnSjZkb09oSkUxVFM2M2FJNHEx
 
 ```
 
@@ -71,15 +71,15 @@ Authorization: Basic WU4xYlJTdUR0QjNvNDhkWXdKSTdYN0lwOnZOUnBKTHpQN3RFRFFaRjVwRjl
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 705
-Date: Mon, 02 May 2022 13:18:58 GMT
+Date: Mon, 02 May 2022 13:23:11 GMT
 
 [
   {
     "account_id": 0,
     "api_key": {
       "id": 2,
-      "key": "RwaeAGyByDYXWTgmr0hy03eK",
-      "secret": "vtS3RtbCRVSGxpje1xskTweo2Q3mW4HukrJRb1sqKBUnVIMzD5oCuC6LLf1KLoH00ep6DKgK8otWMsT4lWWagahZ97wHl4t7eRrXcGSHAr5dJfqSkJYGe7RMTznAwGMB"
+      "key": "nPhhOGVyh86y4q31F0WuBgTT",
+      "secret": "IBhw0dbUhOdjL4HyPQ3WpWWq6SILq9gfrujrnuLYbS0hBGLte2FpCnwQ2qGuk3CwGFWXaeTTTnodxtasDrUCIZYF7GM9B4Z8DYERbWPVriQD3FbStsmJzJStnsPd4Bif"
     },
     "scopes": [
       "read,write:entry"
@@ -89,8 +89,8 @@ Date: Mon, 02 May 2022 13:18:58 GMT
     "account_id": 0,
     "api_key": {
       "id": 3,
-      "key": "YN1bRSuDtB3o48dYwJI7X7Ip",
-      "secret": "vNRpJLzP7tEDQZF5pF9hH7I8cjxXg5FfjeANRaVKxp9SguowbPSIDBQL1onLa0kftdNtYYXsgA3Q9OFpWqxrHIMiTgyh6WdjyP1PLtcz7iiT9MbkuzyEBzzLQcldvM1Z"
+      "key": "6oos9q9TQX4QUJ5XYGDN57Tr",
+      "secret": "uhPIvQ3KQv24JJCuioyOJApHCRmngKySzuXCswF3y9meGOyoNWlSyHxJiyPNm9y4Ktxc92JXop09QktCCZENiu5GdX6Z2PNTsRMtb0jrbRALkgJ6doOhJE1TS63aI4q1"
     },
     "scopes": [
       "read,write:acl"
@@ -100,8 +100,8 @@ Date: Mon, 02 May 2022 13:18:58 GMT
     "account_id": 0,
     "api_key": {
       "id": 4,
-      "key": "mLpdyBPhssd2CPM6Zotf9KM6",
-      "secret": "3AE9Ce26OOaWR1UZ4t5xCmpWjWnd25vD5rG3PS2hE8B0zd7SAoDnO1JCoOTeaMEELbLwWwzUghmNSuovdpj6gI661eiZ2CQP4fcogGnMMfhWuPz61C6SMtmCp5E8eMIP"
+      "key": "JvsZia8TU3dKYA8q2f4h7Lyi",
+      "secret": "0x8hU4IyzBzMuNh7bxBSSBvI3RhCVINx9cjc4fNWOSLwwlVlMwMOATCJGiWJqgkcia0azHqxVVTeG06tqdzGeY7vTRJfIDAIE1rw3e5YrBRpNcIRZYcOKe52T1tsoqjO"
     },
     "scopes": [
       "*:acl"
@@ -120,10 +120,10 @@ Requires `read:acl` scope in the Account.
 ### Example request
 
 ```http
-GET /v1/accounts/0/grants/RwaeAGyByDYXWTgmr0hy03eK HTTP/1.1
+GET /v1/accounts/0/grants/nPhhOGVyh86y4q31F0WuBgTT HTTP/1.1
 Host: localhost:3030
+Authorization: Basic Nm9vczlxOVRRWDRRVUo1WFlHRE41N1RyOnVoUEl2UTNLUXYyNEpKQ3Vpb3lPSkFwSENSbW5nS3lTenVYQ3N3RjN5OW1lR095b05XbFN5SHhKaXlQTm05eTRLdHhjOTJKWG9wMDlRa3RDQ1pFTml1NUdkWDZaMlBOVHNSTXRiMGpyYlJBTGtnSjZkb09oSkUxVFM2M2FJNHEx
 Content-Type: application/json
-Authorization: Basic WU4xYlJTdUR0QjNvNDhkWXdKSTdYN0lwOnZOUnBKTHpQN3RFRFFaRjVwRjloSDdJOGNqeFhnNUZmamVBTlJhVkt4cDlTZ3Vvd2JQU0lEQlFMMW9uTGEwa2Z0ZE50WVlYc2dBM1E5T0ZwV3F4ckhJTWlUZ3loNldkanlQMVBMdGN6N2lpVDlNYmt1enlFQnp6TFFjbGR2TTFa
 
 ```
 
@@ -133,14 +133,14 @@ Authorization: Basic WU4xYlJTdUR0QjNvNDhkWXdKSTdYN0lwOnZOUnBKTHpQN3RFRFFaRjVwRjl
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 238
-Date: Mon, 02 May 2022 13:18:58 GMT
+Date: Mon, 02 May 2022 13:23:11 GMT
 
 {
   "account_id": 0,
   "api_key": {
     "id": 2,
-    "key": "RwaeAGyByDYXWTgmr0hy03eK",
-    "secret": "vtS3RtbCRVSGxpje1xskTweo2Q3mW4HukrJRb1sqKBUnVIMzD5oCuC6LLf1KLoH00ep6DKgK8otWMsT4lWWagahZ97wHl4t7eRrXcGSHAr5dJfqSkJYGe7RMTznAwGMB"
+    "key": "nPhhOGVyh86y4q31F0WuBgTT",
+    "secret": "IBhw0dbUhOdjL4HyPQ3WpWWq6SILq9gfrujrnuLYbS0hBGLte2FpCnwQ2qGuk3CwGFWXaeTTTnodxtasDrUCIZYF7GM9B4Z8DYERbWPVriQD3FbStsmJzJStnsPd4Bif"
   },
   "scopes": [
     "read,write:entry"
@@ -158,10 +158,10 @@ Requires `delete:acl` scope in the Account.
 ### Example request
 
 ```http
-DELETE /v1/accounts/0/grants/RwaeAGyByDYXWTgmr0hy03eK HTTP/1.1
+DELETE /v1/accounts/0/grants/nPhhOGVyh86y4q31F0WuBgTT HTTP/1.1
 Host: localhost:3030
 Content-Type: application/json
-Authorization: Basic bUxwZHlCUGhzc2QyQ1BNNlpvdGY5S002OjNBRTlDZTI2T09hV1IxVVo0dDV4Q21wV2pXbmQyNXZENXJHM1BTMmhFOEIwemQ3U0FvRG5PMUpDb09UZWFNRUVMYkx3V3d6VWdobU5TdW92ZHBqNmdJNjYxZWlaMkNRUDRmY29nR25NTWZoV3VQejYxQzZTTXRtQ3A1RThlTUlQ
+Authorization: Basic SnZzWmlhOFRVM2RLWUE4cTJmNGg3THlpOjB4OGhVNEl5ekJ6TXVOaDdieEJTU0J2STNSaENWSU54OWNqYzRmTldPU0x3d2xWbE13TU9BVENKR2lXSnFna2NpYTBhekhxeFZWVGVHMDZ0cWR6R2VZN3ZUUkpmSURBSUUxcnczZTVZckJScE5jSVJaWWNPS2U1MlQxdHNvcWpP
 
 ```
 
@@ -171,7 +171,7 @@ Authorization: Basic bUxwZHlCUGhzc2QyQ1BNNlpvdGY5S002OjNBRTlDZTI2T09hV1IxVVo0dDV
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 0
-Date: Mon, 02 May 2022 13:18:58 GMT
+Date: Mon, 02 May 2022 13:23:10 GMT
 
 
 ```

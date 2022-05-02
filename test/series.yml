@@ -362,7 +362,7 @@ tests:
       status: 403
 
   -
-    title: GET /v1/accounts/{account_id}/series/{series_id}/{token}
+    title: DELETE /v1/accounts/{account_id}/series/{series_id}
     doc: |
       Delete a Series. This will delete the entire history of the
       series. You may reuse the Series after it has been deleted and
