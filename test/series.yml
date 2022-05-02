@@ -120,6 +120,20 @@ tests:
       status: 403
 
   -
+    title: PUT /v1/accounts/{account_id}/series/{series_id}/{token}
+    doc: |
+      Increment a the specified Series for the provided token.
+      
+      This operation is idempotent for the Series and token. Repeating
+      an identical request will not repeatedly increment the value of the
+      Series.
+      
+      Performing this request again with a different token, or performing
+      this request with the same token _after_ having performed it with a
+      different token _will_ increment the series.
+      
+      Requires `write:entry` scope in the Account.
+      
     request:
       method: PUT
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
@@ -196,6 +210,12 @@ tests:
       status: 403
 
   -
+    title: GET /v1/accounts/{account_id}/series/{series_id}
+    doc: |
+      Fetch the state of the specified Series.
+      
+      Requires `read:entry` scope in the Account.
+      
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
@@ -252,6 +272,13 @@ tests:
       status: 403
 
   -
+    title: GET /v1/accounts/{account_id}/series/{series_id}/{token}
+    doc: |
+      Fetch the state of the specified Series for a specific token
+      which has previously been used to increment the Series.
+      
+      Requires `read:entry` scope in the Account.
+      
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
@@ -335,6 +362,14 @@ tests:
       status: 403
 
   -
+    title: GET /v1/accounts/{account_id}/series/{series_id}/{token}
+    doc: |
+      Delete a Series. This will delete the entire history of the
+      series. You may reuse the Series after it has been deleted and
+      the value will reset to `1`.
+      
+      Requires `delete:entry` scope in the Account.
+      
     request:
       method: DELETE
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}
