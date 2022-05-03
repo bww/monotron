@@ -39,7 +39,7 @@ tests:
         password: secret123
       entity: |
         [
-          "read,write,delete:entry"
+          "read,write,delete:series"
         ]
 
     response:
@@ -59,7 +59,7 @@ tests:
         password: secret123
       entity: |
         [
-          "read:entry"
+          "read:series"
         ]
 
     response:
@@ -132,7 +132,7 @@ tests:
       this request with the same token _after_ having performed it with a
       different token _will_ increment the series.
       
-      Requires `write:entry` scope in the Account.
+      Requires `write:series` scope in the Account.
       
     request:
       method: PUT
@@ -214,7 +214,7 @@ tests:
     doc: |
       Fetch the state of the specified Series.
       
-      Requires `read:entry` scope in the Account.
+      Requires `read:series` scope in the Account.
       
     request:
       method: GET
@@ -277,7 +277,7 @@ tests:
       Fetch the state of the specified Series for a specific token
       which has previously been used to increment the Series.
       
-      Requires `read:entry` scope in the Account.
+      Requires `read:series` scope in the Account.
       
     request:
       method: GET
@@ -368,7 +368,7 @@ tests:
       Series. You may reuse the Series after it has been deleted and
       the value will be reset to `1`.
       
-      Requires `delete:entry` scope in the Account.
+      Requires `delete:series` scope in the Account.
       
     request:
       method: DELETE

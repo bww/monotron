@@ -36,7 +36,7 @@ fn root_authorization(key: String, secret: String) -> apikey::Authorization {
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::System),
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::ACL),
       acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Account),
-      acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Entry),
+      acl::scope::Scope::new(acl::scope::Operation::Every, acl::scope::Resource::Series),
     )),
     api_key: apikey::ApiKey{
       id: 0,
@@ -298,7 +298,7 @@ async fn handle_list_authorizations(account_id: i64, store: store::Store, auth: 
 }
 
 async fn handle_fetch_entry(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Series)?;
   let entry = match store.fetch_entry(account_id, key).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
@@ -307,7 +307,7 @@ async fn handle_fetch_entry(account_id: i64, key: String, store: store::Store, a
 }
 
 async fn handle_delete_entry(account_id: i64, key: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows_in_account(account_id, acl::scope::Operation::Delete, acl::scope::Resource::Entry)?;
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Delete, acl::scope::Resource::Series)?;
   match store.delete_entry(account_id, key).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
@@ -315,7 +315,7 @@ async fn handle_delete_entry(account_id: i64, key: String, store: store::Store, 
 }
 
 async fn handle_fetch_entry_version(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Entry)?;
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Series)?;
   let entry = match store.fetch_entry_version(account_id, key, token).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
@@ -324,7 +324,7 @@ async fn handle_fetch_entry_version(account_id: i64, key: String, token: String,
 }
 
 async fn handle_inc_entry(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
-  auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Entry)?;
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
   let entry = match store.inc_entry(account_id, key, Some(token)).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),

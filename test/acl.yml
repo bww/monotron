@@ -31,7 +31,7 @@ tests:
         Content-Type: application/json
       entity: |
         [
-          "read,write:entry"
+          "read,write:series"
         ]
 
     response:
@@ -57,7 +57,7 @@ tests:
         password: secret123
       entity: |
         [
-          "read,write:entry"
+          "read,write:series"
         ]
 
     response:
@@ -66,7 +66,7 @@ tests:
       entity: |
         {
           "scopes": [
-            "read,write:entry"
+            "read,write:series"
           ]
         }
 
@@ -135,7 +135,7 @@ tests:
         password: ${grant1.response.value.api_key.secret}
       entity: |
         [
-          "read,write:entry"
+          "read,write:series"
         ]
 
     response:
@@ -155,7 +155,7 @@ tests:
   #       password: secret123
   #     entity: |
   #       [
-  #         "read,write:entry"
+  #         "read,write:series"
   #       ]
   # 
   #   response:
@@ -225,7 +225,7 @@ tests:
               "secret": "${grant1.response.value.api_key.secret}"
             },
             "scopes": [
-              "read,write:entry"
+              "read,write:series"
             ]
           },
           {
@@ -313,7 +313,7 @@ tests:
             "secret": "${grant1.response.value.api_key.secret}"
           },
           "scopes": [
-            "read,write:entry"
+            "read,write:series"
           ]
         }
 
