@@ -11,6 +11,7 @@ use serde_json::json;
 
 use crate::model::apikey::{self, Authenticate, AccessControl};
 
+static VERBOSE: sync::OnceCell<bool> = sync::OnceCell::new();
 static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
 const HEADER_AUTHORIZATION: &str = "Authorization";
@@ -25,6 +26,8 @@ pub struct Config {
   pub root_api_key: Option<String>,
   #[envconfig(from = "ROOT_API_SECRET")]
   pub root_api_secret: Option<String>,
+  #[envconfig(from = "VERBOSE", default = "false")]
+  pub verbose: bool,
   #[envconfig(from = "DEBUG", default = "false")]
   pub debug: bool,
 }
@@ -54,6 +57,7 @@ async fn main() -> Result<(), error::Error> {
     Err(err) => panic!("*** Could not load configuration from environment: {}", err),
   };
   
+  VERBOSE.set(conf.verbose || conf.debug).expect("Could not set global verbose state");
   DEBUG.set(conf.debug).expect("Could not set global debug state");
   
   let root = match conf.root_api_key {
@@ -171,7 +175,7 @@ async fn main() -> Result<(), error::Error> {
 }
 
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
-  if *DEBUG.get().unwrap() {
+  if *VERBOSE.get().unwrap() {
     println!("*** {:?}", &err);
   }
   if err.is_not_found() {
