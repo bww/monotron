@@ -13,6 +13,7 @@ monotron:
   environ: staging
   component: monotron
   enableProfiling: true
+  debug: true
   # databaseDSN: postgres://...
   # credentials:
   #   apiKey: root
