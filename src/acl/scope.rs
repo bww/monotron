@@ -69,7 +69,7 @@ pub enum Resource {
   System,
   ACL,
   Account,
-  Entry,
+  Series,
 }
 
 impl Resource {
@@ -78,7 +78,7 @@ impl Resource {
       "system"  => Ok(Resource::System),
       "acl"     => Ok(Resource::ACL),
       "account" => Ok(Resource::Account),
-      "entry"   => Ok(Resource::Entry),
+      "series"  => Ok(Resource::Series),
       _         => Err(Error::InvalidResource(format!("Invalid resource: {:?}", s))),
     }
   }
@@ -90,7 +90,7 @@ impl fmt::Display for Resource {
       Resource::System  => write!(f, "system"),
       Resource::ACL     => write!(f, "acl"),
       Resource::Account => write!(f, "account"),
-      Resource::Entry   => write!(f, "entry"),
+      Resource::Series  => write!(f, "series"),
     }
   }
 }
