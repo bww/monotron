@@ -19,7 +19,7 @@ Performing this request again with a different token, or performing
 this request with the same token _after_ having performed it with a
 different token _will_ increment the series.
 
-Requires `write:entry` scope in the Account.
+Requires `write:series` scope in the Account.
 
 ### Example request
 
@@ -27,7 +27,7 @@ Requires `write:entry` scope in the Account.
 PUT /v1/accounts/0/series/example-1/000001 HTTP/1.1
 Host: localhost:3030
 Content-Type: application/json
-Authorization: Basic eTJNbnQ5bjJQUFZncXJvZlZJRTJNZVFlOlpselJEaGZUYnRTaU1DQ1ZMSUF4SHhTTmd3U2Q1YVp6NkJLTk5RMzc1eGFIWEV5Q0cxN0NBTDc5ZUtlbnJTajU3UTk4elVwR2J5M0R3TVFySGdyZkxUaEthek1kem9QOUdsWXdGcFJiTE1rVG1hMFJoTW9VY1JoV2ZYa3dLUktW
+Authorization: Basic emJXSnJLVXBEWkE4akdqRk4wNGxEQnBkOmZoN1ZoMEVmZ29GUGxPQU1ySk1NVTFFV1dBcGdFRjJscGw5MzAyM3VhMVlyaFd1TEZweE5lRGxYM3Q5aE45UVltTG90V2g1ejM5bk1ocXp6WnN1Z3lDNkc2b2xRNGlLQ3BnNnFVczF2ZFpsRkFjU1FHWnRIU1Y1TnpqNFNxQmZ5
 
 ```
 
@@ -35,9 +35,9 @@ Authorization: Basic eTJNbnQ5bjJQUFZncXJvZlZJRTJNZVFlOlpselJEaGZUYnRTaU1DQ1ZMSUF
 
 ```http
 HTTP/1.1 200 OK
-Content-Length: 61
-Date: Mon, 02 May 2022 13:23:10 GMT
 Content-Type: application/json
+Content-Length: 61
+Date: Tue, 03 May 2022 00:14:04 GMT
 
 {
   "creator_id": 1,
@@ -52,7 +52,7 @@ Content-Type: application/json
 
 Fetch the state of the specified Series.
 
-Requires `read:entry` scope in the Account.
+Requires `read:series` scope in the Account.
 
 ### Example request
 
@@ -60,7 +60,7 @@ Requires `read:entry` scope in the Account.
 GET /v1/accounts/0/series/example-1 HTTP/1.1
 Host: localhost:3030
 Content-Type: application/json
-Authorization: Basic cVFsd0RJVkxNWEFpam5ROUdVUHIzT3cxOmtPeTN5dEtuc3dkMzdiN3Y5QnRsZkxyMTQxcmtXbjFWT0tjZWVoWUdHV3FpRXZsYlpqZm1PQnllaFMzOUFxNnpteFlYeWhaNEJHVW1FSmh4YTYyQ1JDV3BDWVdJenhpN1ZGZFZrcjBOVGZKMVlWQmN4YlpHdG5XQXl1ZVAxNUt4
+Authorization: Basic SlpnN1FncHl1Q0RZeFhQN0ozWEZGZHRZOm5YSHByMXdReUVTcWJBN1hpc3Z6WHR3MUl5bTVxY0RCZ2ZydmtrUDg5cHc5YTJuVEd4cUV5cWt3bHVpSkJYU2RCZHlsc3VwYjJGTjk3cWw3MmtFbnF1dFJ5QVNVODVRZW5MdnFuOEZjRXFyUlJEa3JKMVVNdE9wOExKSEN5TG9o
 
 ```
 
@@ -68,9 +68,9 @@ Authorization: Basic cVFsd0RJVkxNWEFpam5ROUdVUHIzT3cxOmtPeTN5dEtuc3dkMzdiN3Y5QnR
 
 ```http
 HTTP/1.1 200 OK
+Date: Tue, 03 May 2022 00:14:04 GMT
 Content-Type: application/json
 Content-Length: 61
-Date: Mon, 02 May 2022 13:23:10 GMT
 
 {
   "creator_id": 0,
@@ -86,15 +86,15 @@ Date: Mon, 02 May 2022 13:23:10 GMT
 Fetch the state of the specified Series for a specific token
 which has previously been used to increment the Series.
 
-Requires `read:entry` scope in the Account.
+Requires `read:series` scope in the Account.
 
 ### Example request
 
 ```http
 GET /v1/accounts/0/series/example-1/000001 HTTP/1.1
 Host: localhost:3030
-Authorization: Basic cVFsd0RJVkxNWEFpam5ROUdVUHIzT3cxOmtPeTN5dEtuc3dkMzdiN3Y5QnRsZkxyMTQxcmtXbjFWT0tjZWVoWUdHV3FpRXZsYlpqZm1PQnllaFMzOUFxNnpteFlYeWhaNEJHVW1FSmh4YTYyQ1JDV3BDWVdJenhpN1ZGZFZrcjBOVGZKMVlWQmN4YlpHdG5XQXl1ZVAxNUt4
 Content-Type: application/json
+Authorization: Basic SlpnN1FncHl1Q0RZeFhQN0ozWEZGZHRZOm5YSHByMXdReUVTcWJBN1hpc3Z6WHR3MUl5bTVxY0RCZ2ZydmtrUDg5cHc5YTJuVEd4cUV5cWt3bHVpSkJYU2RCZHlsc3VwYjJGTjk3cWw3MmtFbnF1dFJ5QVNVODVRZW5MdnFuOEZjRXFyUlJEa3JKMVVNdE9wOExKSEN5TG9o
 
 ```
 
@@ -104,7 +104,7 @@ Content-Type: application/json
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 61
-Date: Mon, 02 May 2022 13:23:10 GMT
+Date: Tue, 03 May 2022 00:14:04 GMT
 
 {
   "creator_id": 0,
@@ -118,10 +118,10 @@ Date: Mon, 02 May 2022 13:23:10 GMT
 ## DELETE /v1/accounts/{account_id}/series/{series_id}
 
 Delete a Series. This will delete the entire history of the
-series. You may reuse the Series after it has been deleted and
-the value will reset to `1`.
+Series. You may reuse the Series after it has been deleted and
+the value will be reset to `1`.
 
-Requires `delete:entry` scope in the Account.
+Requires `delete:series` scope in the Account.
 
 ### Example request
 
@@ -129,7 +129,7 @@ Requires `delete:entry` scope in the Account.
 DELETE /v1/accounts/0/series/example-1 HTTP/1.1
 Host: localhost:3030
 Content-Type: application/json
-Authorization: Basic eTJNbnQ5bjJQUFZncXJvZlZJRTJNZVFlOlpselJEaGZUYnRTaU1DQ1ZMSUF4SHhTTmd3U2Q1YVp6NkJLTk5RMzc1eGFIWEV5Q0cxN0NBTDc5ZUtlbnJTajU3UTk4elVwR2J5M0R3TVFySGdyZkxUaEthek1kem9QOUdsWXdGcFJiTE1rVG1hMFJoTW9VY1JoV2ZYa3dLUktW
+Authorization: Basic emJXSnJLVXBEWkE4akdqRk4wNGxEQnBkOmZoN1ZoMEVmZ29GUGxPQU1ySk1NVTFFV1dBcGdFRjJscGw5MzAyM3VhMVlyaFd1TEZweE5lRGxYM3Q5aE45UVltTG90V2g1ejM5bk1ocXp6WnN1Z3lDNkc2b2xRNGlLQ3BnNnFVczF2ZFpsRkFjU1FHWnRIU1Y1TnpqNFNxQmZ5
 
 ```
 
@@ -139,7 +139,7 @@ Authorization: Basic eTJNbnQ5bjJQUFZncXJvZlZJRTJNZVFlOlpselJEaGZUYnRTaU1DQ1ZMSUF
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 0
-Date: Mon, 02 May 2022 13:23:11 GMT
+Date: Tue, 03 May 2022 00:14:04 GMT
 
 
 ```

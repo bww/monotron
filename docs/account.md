@@ -23,9 +23,9 @@ Authorization: Basic dGVzdGFwaTpzZWNyZXQxMjM=
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
 Content-Length: 8
-Date: Mon, 02 May 2022 13:23:10 GMT
+Date: Tue, 03 May 2022 00:14:04 GMT
+Content-Type: application/json
 
 {
   "id": 0
