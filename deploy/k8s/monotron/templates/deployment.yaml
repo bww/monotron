@@ -45,8 +45,8 @@ spec:
               value: {{ .Values.monotron.environ }}
             - name: COMPONENT
               value: {{ .Values.monotron.component }}
-            - name: DEBUG
-              value: {{ .Values.monotron.debug | quote }}
+            - name: VERBOSE
+              value: {{ .Values.monotron.verbose | quote }}
             - name: LISTEN
               value: {{ .Values.service.port | quote }}
             - name: ROOT_API_KEY
