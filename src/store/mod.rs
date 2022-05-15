@@ -35,8 +35,14 @@ impl Store {
   }
   
   pub async fn migrate<P: AsRef<path::Path>>(&self, dir: P) -> Result<(), error::Error> {
+    let driver = upgrade::driver::postgres::Driver::new(self.pool.get().await?);
     let provider = upgrade::version::provider::DirectoryProvider::new_with_path(dir)?;
-    let driver = upgrade::driver::postgres::Driver::new(self.pool.get().await?)?;
+    let upgrader = upgrade::Upgrader::new(driver, provider)?;
+    let applied = match upgrader.upgrade_latest() {
+      Ok(applied) => applied,
+      Err(err) => return Err(err.into()),
+    };
+    println!(">>> Applied migrations: {:?}", applied);
     Ok(())
   }
   

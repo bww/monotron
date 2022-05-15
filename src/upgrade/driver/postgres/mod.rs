@@ -1,3 +1,4 @@
+use bb8;
 use tokio_postgres;
 use futures::{pin_mut, TryStreamExt};
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -6,26 +7,24 @@ use crate::upgrade;
 use crate::upgrade::error;
 use crate::upgrade::version;
 
-pub struct Driver<S, T> {
-  conn: tokio_postgres::Connection<S, T>,
+pub struct Driver<'a, M: bb8::ManageConnection> {
+  conn: bb8::PooledConnection<'a, M>,
 }
 
-impl<S, T> Driver<S, T>
+impl<'a, M> Driver<'a, M>
 where
-  S: AsyncRead + AsyncWrite + Unpin,
-  T: AsyncRead + AsyncWrite + Unpin,
+  M: bb8::ManageConnection,
 {
-  pub fn new(conn: tokio_postgres::Connection<S, T>) -> Driver<S, T> {
+  pub fn new(conn: bb8::PooledConnection<'a, M>) -> Driver<'a, M> {
     Driver{
       conn: conn,
     }
   }
 }
 
-impl<S, T, R> upgrade::Driver<R> for Driver<S, T>
+impl<'a, M, R> upgrade::Driver<R> for Driver<'a, M>
 where
-  S: AsyncRead + AsyncWrite + Unpin,
-  T: AsyncRead + AsyncWrite + Unpin,
+  M: bb8::ManageConnection,
   R: upgrade::io::IntoRead,
 {
   fn version(&self) -> Result<usize, error::Error> {
