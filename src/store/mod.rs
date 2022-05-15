@@ -1,5 +1,7 @@
 pub mod error;
 
+use std::path;
+
 use bb8_postgres;
 use tokio_postgres;
 use futures::{pin_mut, TryStreamExt};
@@ -7,6 +9,7 @@ use futures::{pin_mut, TryStreamExt};
 use crate::model::account;
 use crate::model::entry;
 use crate::model::apikey;
+use crate::upgrade;
 
 const MAX_RESULTS: usize = 500;
 
@@ -26,9 +29,15 @@ impl Store {
       .await?;
     
     let store = Store{pool};
-    store.init().await?;
+    // store.init().await?;
     
     return Ok(store);
+  }
+  
+  pub async fn migrate<P: AsRef<path::Path>>(&self, dir: P) -> Result<(), error::Error> {
+    let provider = upgrade::version::provider::DirectoryProvider::new_with_path(dir)?;
+    let driver = upgrade::driver::postgres::Driver::new(self.pool.get().await?)?;
+    Ok(())
   }
   
   async fn init(&self) -> Result<(), error::Error> {

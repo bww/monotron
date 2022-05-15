@@ -2,9 +2,9 @@ use std::io;
 use std::fs;
 use std::path;
 
-use crate::update::error;
-use crate::update::version;
-use crate::update::io::{IntoRead, FileIntoRead};
+use crate::upgrade::error;
+use crate::upgrade::version;
+use crate::upgrade::io::{IntoRead, FileIntoRead};
 
 pub trait Provider<R: IntoRead> {
   fn versions(&self) -> Result<Vec<version::Version<R>>, error::Error>;

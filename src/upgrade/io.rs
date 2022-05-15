@@ -3,7 +3,7 @@ use std::path;
 
 use bytes;
 
-use crate::update::error;
+use crate::upgrade::error;
 
 pub trait IntoRead: Clone {
   type Read;

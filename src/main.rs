@@ -2,7 +2,7 @@ mod acl;
 mod error;
 mod store;
 mod model;
-mod update;
+mod upgrade;
 
 use chrono;
 use warp::{http, Filter};

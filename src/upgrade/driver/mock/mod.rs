@@ -1,6 +1,6 @@
-use crate::update;
-use crate::update::error;
-use crate::update::version;
+use crate::upgrade;
+use crate::upgrade::error;
+use crate::upgrade::version;
 
 pub struct Driver {
   version: usize,
@@ -20,7 +20,7 @@ impl Driver {
   }
 }
 
-impl<R: update::io::IntoRead> update::Driver<R> for Driver {
+impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
     Ok(self.version)
   }

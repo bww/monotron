@@ -7,6 +7,7 @@ use warp;
 use tokio_postgres;
 
 use crate::acl;
+use crate::upgrade;
 
 #[derive(Debug)]
 pub enum Error {
@@ -17,6 +18,7 @@ pub enum Error {
   PostgresError(tokio_postgres::Error),
   ConnectionError(bb8::RunError<tokio_postgres::Error>),
   ScopeError(acl::scope::Error),
+  UpgradeError(upgrade::error::Error),
 }
 
 impl warp::reject::Reject for Error {}
@@ -51,6 +53,12 @@ impl From<acl::scope::Error> for Error {
   }
 }
 
+impl From<upgrade::error::Error> for Error {
+  fn from(error: upgrade::error::Error) -> Self {
+    Self::UpgradeError(error)
+  }
+}
+
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
@@ -61,6 +69,7 @@ impl fmt::Display for Error {
       Self::PostgresError(err) => err.fmt(f),
       Self::ConnectionError(err) => err.fmt(f),
       Self::ScopeError(err) => err.fmt(f),
+      Self::UpgradeError(err) => err.fmt(f),
     }
   }
 }

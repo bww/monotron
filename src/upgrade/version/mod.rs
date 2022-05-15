@@ -6,8 +6,8 @@ use std::cmp;
 use std::iter;
 use std::path;
 
-use crate::update::error;
-use crate::update::io::{IntoRead, FileIntoRead, BytesIntoRead};
+use crate::upgrade::error;
+use crate::upgrade::io::{IntoRead, FileIntoRead, BytesIntoRead};
 
 #[derive(Debug, Clone)]
 pub struct Version<R: IntoRead> {
