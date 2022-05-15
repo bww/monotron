@@ -23,8 +23,16 @@ impl<D: Driver, R: update::io::IntoRead> Updater<D, R> {
     })
   }
   
-  pub fn version(&self) -> Result<usize, error::Error> {
+  pub fn current_version(&self) -> Result<usize, error::Error> {
     self.driver.version()
+  }
+  
+  pub fn latest_version(&self) -> Result<usize, error::Error> {
+    if let Some(max) = self.versions.iter().max() {
+      Ok(max.version())
+    }else{
+      Ok(0)
+    }
   }
 }
 
@@ -37,7 +45,8 @@ mod tests {
     let d = mock::Driver::new(0);
     let p = version::DirectoryProvider::new_with_path("./etc/db").unwrap();
     let u = Updater::new(d, p).unwrap();
-    println!(">>> {}", u.version().unwrap());
+    println!(">>> CURR {}", u.current_version().unwrap());
+    println!(">>> MAXX {}", u.latest_version().unwrap());
   }
   
 }

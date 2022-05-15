@@ -14,6 +14,12 @@ pub struct Version<R: IntoRead> {
   reader: R,
 }
 
+impl<R: IntoRead> Version<R> {
+  pub fn version(&self) -> usize {
+    self.version
+  }
+}
+
 impl<R: IntoRead> cmp::PartialOrd for Version<R> {
   fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
     self.version.partial_cmp(&other.version)
