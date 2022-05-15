@@ -4,11 +4,15 @@ use crate::update::version;
 
 pub struct Driver {
   version: usize,
-  error: bool,
+  error: Option<String>,
 }
 
 impl Driver {
-  pub fn new(version: usize, error: bool) -> Driver {
+  pub fn new(version: usize, error: Option<&str>) -> Driver {
+    let error = match error {
+      Some(error) => Some(error.to_owned()),
+      None => None,
+    };
     Driver{
       version: version,
       error: error,
@@ -22,10 +26,9 @@ impl<R: update::io::IntoRead> update::Driver<R> for Driver {
   }
   
   fn apply(&self, version: version::Version<R>) -> Result<(), error::Error> {
-    if self.error {
-      Err(error::Error::DriverError)
-    }else{
-      Ok(())
+    match &self.error {
+      Some(msg) => Err(error::Error::UpgradeError(version.version(), version.description(), msg.to_owned())),
+      None => Ok(()),
     }
   }
 }

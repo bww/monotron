@@ -20,6 +20,10 @@ impl<R: IntoRead> Version<R> {
   pub fn version(&self) -> usize {
     self.version
   }
+  
+  pub fn description(&self) -> String {
+    self.descr.to_owned()
+  }
 }
 
 impl<R: IntoRead> cmp::PartialOrd for Version<R> {

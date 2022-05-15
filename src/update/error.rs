@@ -9,6 +9,7 @@ pub enum Error {
   ParseIntError(num::ParseIntError),
   VersionError(String),
   SequenceError(usize, usize),
+  UpgradeError(usize, String, String),
 }
 
 impl From<io::Error> for Error {
@@ -31,6 +32,7 @@ impl fmt::Display for Error {
       Self::ParseIntError(err) => err.fmt(f),
       Self::VersionError(msg) => write!(f, "Invalid version: {}", msg),
       Self::SequenceError(expect, actual) => write!(f, "Invalid version sequence; expected: {}, found: {}", expect, actual),
+      Self::UpgradeError(version, resource, msg) => write!(f, "Could not upgrade to version #{} [{}]: {}", version, resource, msg),
     }
   }
 }
