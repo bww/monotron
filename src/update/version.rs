@@ -5,23 +5,7 @@ use std::iter;
 use std::path;
 
 use crate::update::error;
-
-pub trait IntoRead {
-  type Read;
-  fn into_read(&self) -> Result<Self::Read, error::Error>;
-}
-
-#[derive(Debug, Clone)]
-pub struct FileIntoRead {
-  path: path::PathBuf,
-}
-
-impl IntoRead for FileIntoRead {
-  type Read = fs::File;
-  fn into_read(&self) -> Result<Self::Read, error::Error> {
-    Ok(fs::File::open(&self.path)?)
-  }
-}
+use crate::update::io::{IntoRead, FileIntoRead};
 
 #[derive(Debug, Clone)]
 pub struct Version<R: IntoRead> {
@@ -97,9 +81,7 @@ impl Version<FileIntoRead> {
       Some(Version{
         version: v,
         descr: name.to_string(),
-        reader: FileIntoRead{
-          path: path::PathBuf::from(path),
-        },
+        reader: FileIntoRead::new(&path),
       })
     )
   }
@@ -112,40 +94,42 @@ impl IntoRead for Version<FileIntoRead> {
   }
 }
 
-pub trait VersionProvider: iter::Iterator {}
+pub trait Provider<R: IntoRead> {
+  fn versions(&self) -> Result<Vec<Version<R>>, error::Error>;
+}
 
 pub struct DirectoryProvider {
-  dir: path::PathBuf,
+  path: path::PathBuf,
   iter: fs::ReadDir,
 }
 
 impl DirectoryProvider {
   pub fn new_with_path<P: AsRef<path::Path>>(path: P) -> Result<Self, error::Error> {
     Ok(Self{
-      dir: path::PathBuf::from(path.as_ref()),
+      path: path::PathBuf::from(path.as_ref()),
       iter: fs::read_dir(path)?,
     })
   }
-}
-
-impl iter::Iterator for DirectoryProvider {
-  type Item = Result<Version<FileIntoRead>, error::Error>;
-  fn next(&mut self) -> Option<Self::Item> {
-    loop {
-      if let Some(e) = self.iter.next() {
-        match e {
-          Ok(e) => match Version::from_entry(e) {
-            Ok(v) => if let Some(v) = v {
-              return Some(Ok(v));
-            },
-            Err(err) => return Some(Err(err.into())),
-          },
-          Err(err) => return Some(Err(err.into())),
-        }
-      }else{
-        return None;
+  
+  fn load_versions<P: AsRef<path::Path>>(path: P) -> Result<Vec<Version<FileIntoRead>>, error::Error> {
+    let mut ver: Vec<Version<FileIntoRead>> = Vec::new();
+    for e in fs::read_dir(path)? {
+      match e {
+        Ok(e) => match Version::from_entry(e) {
+          Ok(v) => if let Some(v) = v { ver.push(v); },
+          Err(err) => return Err(err.into()),
+        },
+        Err(err) => return Err(err.into()),
       }
     }
+    ver.sort();
+    Ok(ver)
+  }
+}
+
+impl Provider<FileIntoRead> for DirectoryProvider {
+  fn versions(&self) -> Result<Vec<Version<FileIntoRead>>, error::Error> {
+    Ok(DirectoryProvider::load_versions(&self.path)?)
   }
 }
 
@@ -155,18 +139,8 @@ mod tests {
   
   #[test]
   fn provide_versions() {
-    let iter = DirectoryProvider::new_with_path("./etc/db").unwrap();
-    
-    let mut versions: Vec<Version<FileIntoRead>> = Vec::new();
-    for v in iter {
-      match v {
-        Ok(v) => versions.push(v),
-        Err(err) => panic!("*** {}", err),
-      };
-    }
-    
-    versions.sort();
-    for v in versions {
+    let p = DirectoryProvider::new_with_path("./etc/db").unwrap();
+    for v in p.versions().unwrap() {
       println!("### {:?}", v);
       let mut r = match v.into_read() {
         Ok(r) => r,

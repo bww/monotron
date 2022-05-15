@@ -1,28 +1,43 @@
+pub mod io;
 pub mod error;
 pub mod version;
+pub mod driver;
 
-// pub trait Driver {
-//   fn version(&self) -> Result<usize, error::Error>;
-// }
+use crate::update;
+use crate::update::driver::mock;
 
-// pub struct Updater<D: Driver> {
-//   driver: D,
-// }
+pub trait Driver {
+  fn version(&self) -> Result<usize, error::Error>;
+}
 
-// impl<D> Updater<D> {
-//   pub fn new(driver: D) -> Self {
-//     Self{
-//       driver: driver,
-//     }
-//   }
-// }
+pub struct Updater<D: Driver, R: update::io::IntoRead> {
+  driver: D,
+  versions: Vec<version::Version<R>>,
+}
+
+impl<D: Driver, R: update::io::IntoRead> Updater<D, R> {
+  pub fn new<P: version::Provider<R>>(driver: D, provider: P) -> Result<Self, error::Error> {
+    Ok(Self{
+      driver: driver,
+      versions: provider.versions()?,
+    })
+  }
+  
+  pub fn version(&self) -> Result<usize, error::Error> {
+    self.driver.version()
+  }
+}
 
 #[cfg(test)]
 mod tests {
   use super::*;
   
   #[test]
-  fn provide_versions() {
+  fn update_okay() {
+    let d = mock::Driver::new(0);
+    let p = version::DirectoryProvider::new_with_path("./etc/db").unwrap();
+    let u = Updater::new(d, p).unwrap();
+    println!(">>> {}", u.version().unwrap());
   }
   
 }
