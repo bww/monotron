@@ -3,7 +3,7 @@ use std::path;
 
 use crate::update::error;
 
-pub trait IntoRead {
+pub trait IntoRead: Clone {
   type Read;
   fn into_read(&self) -> Result<Self::Read, error::Error>;
 }
@@ -27,4 +27,3 @@ impl IntoRead for FileIntoRead {
     Ok(fs::File::open(&self.path)?)
   }
 }
-

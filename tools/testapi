@@ -23,7 +23,7 @@ export ROOT_API_SECRET=secret123
 component=monotron
 hostname=localhost
 exec_cmd="$project_home/target/debug/monotron"
-test_root="$project_home/test"
+test_root="$project_home/test/api"
 
 # parse arguments
 args=$(getopt d $*)

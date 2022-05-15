@@ -7,6 +7,8 @@ pub enum Error {
   DriverError,
   IOError(io::Error),
   ParseIntError(num::ParseIntError),
+  VersionError(String),
+  SequenceError(usize, usize),
 }
 
 impl From<io::Error> for Error {
@@ -24,9 +26,11 @@ impl From<num::ParseIntError> for Error {
 impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Self::DriverError => "driver_error".fmt(f),
+      Self::DriverError => "Driver error".fmt(f),
       Self::IOError(err) => err.fmt(f),
       Self::ParseIntError(err) => err.fmt(f),
+      Self::VersionError(msg) => write!(f, "Invalid version: {}", msg),
+      Self::SequenceError(expect, actual) => write!(f, "Invalid version sequence; expected: {}, found: {}", expect, actual),
     }
   }
 }

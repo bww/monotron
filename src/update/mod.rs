@@ -16,7 +16,7 @@ pub struct Updater<D: Driver, R: update::io::IntoRead> {
 }
 
 impl<D: Driver, R: update::io::IntoRead> Updater<D, R> {
-  pub fn new<P: version::Provider<R>>(driver: D, provider: P) -> Result<Self, error::Error> {
+  pub fn new<P: version::provider::Provider<R>>(driver: D, provider: P) -> Result<Self, error::Error> {
     Ok(Self{
       driver: driver,
       versions: provider.versions()?,
@@ -62,7 +62,7 @@ mod tests {
   #[test]
   fn update_okay() {
     let d = mock::Driver::new(0);
-    let p = version::DirectoryProvider::new_with_path("./etc/db").unwrap();
+    let p = version::provider::DirectoryProvider::new_with_path("./etc/db").unwrap();
     let u = Updater::new(d, p).unwrap();
     println!(">>> CURR {}", u.current_version().unwrap());
     println!(">>> MAXX {}", u.latest_version().unwrap());

@@ -2,13 +2,22 @@ use crate::update;
 use crate::update::error;
 
 pub struct Driver {
-  version: usize
+  version: usize,
+  error: Option<error::Error>,
 }
 
 impl Driver {
   pub fn new(version: usize) -> Driver {
     Driver{
       version: version,
+      error: None,
+    }
+  }
+  
+  pub fn new_with_error(version: usize, err: error::Error) -> Driver {
+    Driver{
+      version: version,
+      error: Some(err),
     }
   }
 }
