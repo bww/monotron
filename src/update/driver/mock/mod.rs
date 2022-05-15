@@ -1,29 +1,31 @@
 use crate::update;
 use crate::update::error;
+use crate::update::version;
 
 pub struct Driver {
   version: usize,
-  error: Option<error::Error>,
+  error: bool,
 }
 
 impl Driver {
-  pub fn new(version: usize) -> Driver {
+  pub fn new(version: usize, error: bool) -> Driver {
     Driver{
       version: version,
-      error: None,
-    }
-  }
-  
-  pub fn new_with_error(version: usize, err: error::Error) -> Driver {
-    Driver{
-      version: version,
-      error: Some(err),
+      error: error,
     }
   }
 }
 
-impl update::Driver for Driver {
+impl<R: update::io::IntoRead> update::Driver<R> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
     Ok(self.version)
+  }
+  
+  fn apply(&self, version: version::Version<R>) -> Result<(), error::Error> {
+    if self.error {
+      Err(error::Error::DriverError)
+    }else{
+      Ok(())
+    }
   }
 }

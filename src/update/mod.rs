@@ -6,16 +6,17 @@ pub mod driver;
 use crate::update;
 use crate::update::driver::mock;
 
-pub trait Driver {
+pub trait Driver<R: update::io::IntoRead> {
   fn version(&self) -> Result<usize, error::Error>;
+  fn apply(&self, version: version::Version<R>) -> Result<(), error::Error>;
 }
 
-pub struct Updater<D: Driver, R: update::io::IntoRead> {
+pub struct Updater<R: update::io::IntoRead, D: Driver<R>> {
   driver: D,
   versions: Vec<version::Version<R>>,
 }
 
-impl<D: Driver, R: update::io::IntoRead> Updater<D, R> {
+impl<R: update::io::IntoRead, D: Driver<R>> Updater<R, D> {
   pub fn new<P: version::provider::Provider<R>>(driver: D, provider: P) -> Result<Self, error::Error> {
     Ok(Self{
       driver: driver,
@@ -61,7 +62,7 @@ mod tests {
   
   #[test]
   fn update_okay() {
-    let d = mock::Driver::new(0);
+    let d = mock::Driver::new(0, false);
     let p = version::provider::DirectoryProvider::new_with_path("./etc/db").unwrap();
     let u = Updater::new(d, p).unwrap();
     println!(">>> CURR {}", u.current_version().unwrap());

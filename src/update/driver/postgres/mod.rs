@@ -3,6 +3,7 @@ use futures::{pin_mut, TryStreamExt};
 
 use crate::update;
 use crate::update::error;
+use crate::update::version;
 
 pub struct Driver {
   // conn: tokio_postgres::Connection,
@@ -20,8 +21,12 @@ impl Driver {
   }
 }
 
-impl update::Driver for Driver {
+impl<R: update::io::IntoRead> update::Driver<R> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
     Ok(0)
+  }
+  
+  fn apply(&self, version: version::Version<R>) -> Result<(), error::Error> {
+    Ok(())
   }
 }
