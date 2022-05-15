@@ -34,6 +34,25 @@ impl<D: Driver, R: update::io::IntoRead> Updater<D, R> {
       Ok(0)
     }
   }
+
+  pub fn upgrade_latest(&self) -> Result<Vec<usize>, error::Error> {
+    self.upgrade(self.latest_version()?)
+  }
+  
+  pub fn upgrade(&self, target: usize) -> Result<Vec<usize>, error::Error> {
+    let curr = self.current_version()?;
+    let mut applied: Vec<usize> = Vec::new();
+    
+    for v in &self.versions {
+      let candidate = v.version();
+      if candidate > curr && candidate <= target {
+        println!(">>> >>> >>> APPLY VERSION: {}", candidate);
+        applied.push(candidate);
+      }
+    }
+    
+    Ok(applied)
+  }
 }
 
 #[cfg(test)]
@@ -47,6 +66,7 @@ mod tests {
     let u = Updater::new(d, p).unwrap();
     println!(">>> CURR {}", u.current_version().unwrap());
     println!(">>> MAXX {}", u.latest_version().unwrap());
+    assert_eq!(vec![1, 2], u.upgrade(2).unwrap());
   }
   
 }
