@@ -86,9 +86,9 @@ mod tests {
   fn directory_provider_002() {
     let p = DirectoryProvider::new_with_path("./test/fixture/migrate/002").unwrap();
     let v: Vec<version::Version<FileIntoRead>> = vec![
-      version::Version::new(1, "./test/fixture/migrate/002/1_first.sql").unwrap(),
-      version::Version::new(2, "./test/fixture/migrate/002/2_second.sql").unwrap(),
-      version::Version::new(3, "./test/fixture/migrate/002/3_third.sql").unwrap(),
+      version::Version::new_with_path(1, "./test/fixture/migrate/002/1_first.sql").unwrap(),
+      version::Version::new_with_path(2, "./test/fixture/migrate/002/2_second.sql").unwrap(),
+      version::Version::new_with_path(3, "./test/fixture/migrate/002/3_third.sql").unwrap(),
     ];
     assert_eq!(v, p.versions().unwrap());
   }
@@ -107,9 +107,9 @@ mod tests {
   fn directory_provider_004() {
     let p = DirectoryProvider::new_with_path("./test/fixture/migrate/004").unwrap();
     let v: Vec<version::Version<FileIntoRead>> = vec![
-      version::Version::new(1, "./test/fixture/migrate/002/001_first.sql").unwrap(),
-      version::Version::new(2, "./test/fixture/migrate/002/002_second.sql").unwrap(),
-      version::Version::new(3, "./test/fixture/migrate/002/003_third.sql").unwrap(),
+      version::Version::new_with_path(1, "./test/fixture/migrate/002/001_first.sql").unwrap(),
+      version::Version::new_with_path(2, "./test/fixture/migrate/002/002_second.sql").unwrap(),
+      version::Version::new_with_path(3, "./test/fixture/migrate/002/003_third.sql").unwrap(),
     ];
     assert_eq!(v, p.versions().unwrap());
   }

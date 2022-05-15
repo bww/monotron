@@ -7,7 +7,7 @@ use std::iter;
 use std::path;
 
 use crate::update::error;
-use crate::update::io::{IntoRead, FileIntoRead};
+use crate::update::io::{IntoRead, FileIntoRead, BytesIntoRead};
 
 #[derive(Debug, Clone)]
 pub struct Version<R: IntoRead> {
@@ -41,8 +41,18 @@ impl<R: IntoRead> cmp::PartialEq for Version<R> {
   }
 }
 
+impl Version<BytesIntoRead> {
+  pub fn new_with_bytes(version: usize, data: bytes::Bytes) -> Result<Version<BytesIntoRead>, error::Error> {
+    Ok(Version{
+      version: version,
+      descr: format!("{}B", data.len()),
+      reader: BytesIntoRead::new(data),
+    })
+  }
+}
+
 impl Version<FileIntoRead> {
-  pub fn new<P: AsRef<path::Path>>(version: usize, path: P) -> Result<Version<FileIntoRead>, error::Error> {
+  pub fn new_with_path<P: AsRef<path::Path>>(version: usize, path: P) -> Result<Version<FileIntoRead>, error::Error> {
     let name = match path.as_ref().file_name() {
       Some(name) => name,
       None => return Err(error::Error::VersionError(format!("No file name"))),

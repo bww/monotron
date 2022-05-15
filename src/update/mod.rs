@@ -47,7 +47,7 @@ impl<R: update::io::IntoRead, D: Driver<R>> Updater<R, D> {
     for v in &self.versions {
       let candidate = v.version();
       if candidate > curr && candidate <= target {
-        println!(">>> >>> >>> APPLY VERSION: {}", candidate);
+        self.driver.apply(v.to_owned())?;
         applied.push(candidate);
       }
     }
@@ -60,9 +60,21 @@ impl<R: update::io::IntoRead, D: Driver<R>> Updater<R, D> {
 mod tests {
   use super::*;
   
+  // #[test]
+  // fn update_okay() {
+  //   let d = mock::Driver::new(0, false);
+  //   let p = version::provider::ConstantProvider()
+  //   let p = version::provider::DirectoryProvider::new_with_path("./etc/db").unwrap();
+  //   let u = Updater::new(d, p).unwrap();
+  //   println!(">>> CURR {}", u.current_version().unwrap());
+  //   println!(">>> MAXX {}", u.latest_version().unwrap());
+  //   assert_eq!(vec![1, 2], u.upgrade(2).unwrap());
+  // }
+  
   #[test]
   fn update_okay() {
     let d = mock::Driver::new(0, false);
+
     let p = version::provider::DirectoryProvider::new_with_path("./etc/db").unwrap();
     let u = Updater::new(d, p).unwrap();
     println!(">>> CURR {}", u.current_version().unwrap());

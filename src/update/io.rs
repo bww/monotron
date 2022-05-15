@@ -1,6 +1,8 @@
 use std::fs;
 use std::path;
 
+use bytes;
+
 use crate::update::error;
 
 pub trait IntoRead: Clone {
@@ -27,3 +29,24 @@ impl IntoRead for FileIntoRead {
     Ok(fs::File::open(&self.path)?)
   }
 }
+
+#[derive(Debug, Clone)]
+pub struct BytesIntoRead {
+  data: bytes::Bytes,
+}
+
+impl BytesIntoRead {
+  pub fn new(data: bytes::Bytes) -> BytesIntoRead {
+    BytesIntoRead{
+      data: data,
+    }
+  }
+}
+
+impl IntoRead for BytesIntoRead {
+  type Read = bytes::Bytes;
+  fn into_read(&self) -> Result<Self::Read, error::Error> {
+    Ok(self.data.to_owned())
+  }
+}
+
