@@ -70,6 +70,7 @@ async fn main() -> Result<(), error::Error> {
   
   let store = store::Store::new(&conf.db_dsn).await?;
   store.migrate("./etc/db").await?;
+  
   let store_filter = warp::any().map(move || store.clone());
   let root_filter = warp::any().map(move || root.clone());
   
