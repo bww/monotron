@@ -30,13 +30,13 @@ impl Driver {
 }
 
 impl Driver {
-  async fn create_version_table(pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>, name: &str) -> Result<(), error::Error> {
+  async fn create_version_table(pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>, table: &str) -> Result<(), error::Error> {
     let client = match pool.get().await {
       Ok(client) => client,
       Err(err) => return Err(error::Error::DriverError("Could not create client".to_string())),
     };
     let res = match client.execute(
-      &format!("CREATE TABLE IF NOT EXISTS {} (version BIGINT NOT NULL PRIMARY KEY)", name),
+      &format!("CREATE TABLE IF NOT EXISTS {} (version BIGINT NOT NULL PRIMARY KEY)", table),
       &[]
     ).await {
       Ok(res) => res,
@@ -44,9 +44,59 @@ impl Driver {
     };
     Ok(())
   }
+
+  async fn current_version(pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>, table: &str) -> Result<usize, error::Error> {
+    let client = match pool.get().await {
+      Ok(client) => client,
+      Err(err) => return Err(error::Error::DriverError("Could not create client".to_string())),
+    };
+    
+    let res = match client.query_one(
+      &format!("SELECT COALESCE(MAX(version), 0::BIGINT) FROM {}", VERSION_TABLE),
+      &[]
+    ).await {
+      Ok(res) => res,
+      Err(err) => return Err(error::Error::DriverError("Could not query version".to_string())),
+    };
+    
+    let version: i64 = match res.try_get(0) {
+      Ok(version) => version,
+      Err(err) => return Err(error::Error::DriverError(format!("Could not read result: {}", err))),
+    };
+    
+    Ok(version as usize)
+  }
+
+  async fn apply_version(pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>, table: &str, version: version::Version<upgrade::io::FileIntoRead>) -> Result<(), error::Error> {
+    let reader = version.into_read()?;
+    let mut sql = String::new();
+    reader.read_to_string(sql)?;
+    
+    println!(">>> BUF: {}", sql);
+    
+    // let client = match pool.get().await {
+    //   Ok(client) => client,
+    //   Err(err) => return Err(error::Error::DriverError("Could not create client".to_string())),
+    // };
+    
+    // let res = match client.query_one(
+    //   &format!("SELECT COALESCE(MAX(version), 0::BIGINT) FROM {}", VERSION_TABLE),
+    //   &[]
+    // ).await {
+    //   Ok(res) => res,
+    //   Err(err) => return Err(error::Error::DriverError("Could not query version".to_string())),
+    // };
+    
+    // let version: i64 = match res.try_get(0) {
+    //   Ok(version) => version,
+    //   Err(err) => return Err(error::Error::DriverError(format!("Could not read result: {}", err))),
+    // };
+    
+    Ok(())
+  }
 }
 
-impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
+impl upgrade::Driver<upgrade::io::FileIntoRead> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
     let (tx, rx) = crossbeam_channel::bounded(1);
     let pool = self.pool.clone();
@@ -55,36 +105,17 @@ impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
         tx.send(Err(err)).unwrap();
         return;
       }
-      
-      let client = match pool.get().await {
-        Ok(client) => client,
-        Err(err) => {
-          tx.send(Err(error::Error::DriverError("Could not create client".to_string()))).unwrap();
-          return;
-        },
-      };
-      
-      let res = match client.query_one(
-        &format!("SELECT COALESCE(MAX(version), 0::BIGINT) FROM {}", VERSION_TABLE),
-        &[]
-      ).await {
-        Ok(res) => res,
-        Err(err) => {
-          tx.send(Err(error::Error::DriverError("Could not query version".to_string()))).unwrap();
-          return;
-        },
-      };
-      
-      tx.send(match res.try_get(0) {
-        Ok(version) => Ok(version),
-        Err(err) => Err(error::Error::DriverError(format!("Could not read result: {}", err))),
-      }).unwrap();
+      tx.send(Driver::current_version(pool.clone(), VERSION_TABLE).await).unwrap();
     });
-    let version: i64 = rx.recv()??;
-    Ok(version as usize)
+    Ok(rx.recv()??)
   }
   
-  fn apply(&self, version: version::Version<R>) -> Result<(), error::Error> {
-    Ok(())
+  fn apply(&self, version: version::Version<upgrade::io::FileIntoRead>) -> Result<(), error::Error> {
+    let (tx, rx) = crossbeam_channel::bounded(1);
+    let pool = self.pool.clone();
+    self.handle.spawn(async move {
+      tx.send(Driver::apply_version(pool.clone(), VERSION_TABLE, version).await).unwrap();
+    });
+    Ok(rx.recv()??)
   }
 }
