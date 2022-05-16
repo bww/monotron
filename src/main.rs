@@ -173,7 +173,7 @@ async fn main() -> Result<(), error::Error> {
 }
 
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
-  if debug::debug() {
+  if debug::verbose() {
     println!("*** {:?}", &err);
   }
   if err.is_not_found() {

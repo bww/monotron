@@ -23,9 +23,9 @@ pub fn debug() -> bool {
 
 pub fn verbose() -> bool {
   if let Some(v) = VERBOSE.get() {
-    return *v;
+    return *v || debug();
   }
   let v = is_set("VERBOSE");
   VERBOSE.set(v).expect("Could not set global verbose flag");
-  v
+  v || debug()
 }
