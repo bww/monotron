@@ -13,6 +13,8 @@ use crate::upgrade;
 use crate::upgrade::error;
 use crate::upgrade::version;
 
+const VERSION_TABLE: &str = "schema_version";
+
 pub struct Driver {
   handle: runtime::Handle,
   pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>,
@@ -27,11 +29,33 @@ impl Driver {
   }
 }
 
+impl Driver {
+  async fn create_version_table(pool: bb8::Pool<bb8_postgres::PostgresConnectionManager<tokio_postgres::NoTls>>, name: &str) -> Result<(), error::Error> {
+    let client = match pool.get().await {
+      Ok(client) => client,
+      Err(err) => return Err(error::Error::DriverError("Could not create client".to_string())),
+    };
+    let res = match client.execute(
+      &format!("CREATE TABLE IF NOT EXISTS {} (version BIGINT NOT NULL PRIMARY KEY)", name),
+      &[]
+    ).await {
+      Ok(res) => res,
+      Err(err) => return Err(error::Error::DriverError("Could not create client".to_string())),
+    };
+    Ok(())
+  }
+}
+
 impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
     let (tx, rx) = crossbeam_channel::bounded(1);
     let pool = self.pool.clone();
     self.handle.spawn(async move {
+      if let Err(err) = Driver::create_version_table(pool.clone(), VERSION_TABLE).await {
+        tx.send(Err(err)).unwrap();
+        return;
+      }
+      
       let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
@@ -39,8 +63,9 @@ impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
           return;
         },
       };
+      
       let res = match client.query_one(
-        "SELECT 1::BIGINT;",
+        &format!("SELECT COALESCE(MAX(version), 0::BIGINT) FROM {}", VERSION_TABLE),
         &[]
       ).await {
         Ok(res) => res,
@@ -49,6 +74,7 @@ impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
           return;
         },
       };
+      
       tx.send(match res.try_get(0) {
         Ok(version) => Ok(version),
         Err(err) => Err(error::Error::DriverError(format!("Could not read result: {}", err))),
