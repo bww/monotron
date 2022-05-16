@@ -1,12 +1,16 @@
 pub mod error;
 
+use std::path;
+
 use bb8_postgres;
 use tokio_postgres;
+use tokio::runtime;
 use futures::{pin_mut, TryStreamExt};
 
 use crate::model::account;
 use crate::model::entry;
 use crate::model::apikey;
+use crate::upgrade;
 
 const MAX_RESULTS: usize = 500;
 
@@ -25,84 +29,17 @@ impl Store {
       .build(manager)
       .await?;
     
-    let store = Store{pool};
-    store.init().await?;
-    
-    return Ok(store);
+    return Ok(Store{pool});
   }
   
-  async fn init(&self) -> Result<(), error::Error> {
-    let client = self.pool.get().await?;
-    
-    client.execute(
-      "CREATE TABLE IF NOT EXISTS mn_account (
-         id         BIGSERIAL PRIMARY KEY,
-         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-      )",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "CREATE TABLE IF NOT EXISTS mn_api_key (
-         id         BIGSERIAL PRIMARY KEY,
-         key        VARCHAR(256) NOT NULL UNIQUE,
-         secret     VARCHAR(1024) NOT NULL,
-         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-      )",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "CREATE TABLE IF NOT EXISTS mn_account_r_api_key (
-         account_id BIGINT NOT NULL REFERENCES mn_account (id),
-         api_key_id BIGINT NOT NULL REFERENCES mn_api_key (id),
-         scopes     VARCHAR(64)[] NOT NULL,
-         PRIMARY KEY (account_id, api_key_id)
-      )",
-      &[]
-    )
-    .await?;
-    
-    client.execute( // this is the implied system account
-      "INSERT INTO mn_account (id) VALUES (0)
-       ON CONFLICT (id) DO NOTHING",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "CREATE TABLE IF NOT EXISTS mn_entry (
-         key        VARCHAR(256) NOT NULL,
-         creator_id BIGINT NOT NULL REFERENCES mn_account (id),
-         token      VARCHAR(256), -- nullable
-         value      BIGINT NOT NULL,
-         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         PRIMARY KEY (key, creator_id)
-      )",
-      &[]
-    )
-    .await?;
-    
-    client.execute(
-      "CREATE TABLE IF NOT EXISTS mn_entry_version (
-         key        VARCHAR(256) NOT NULL,
-         creator_id BIGINT NOT NULL REFERENCES mn_account (id),
-         token      VARCHAR(256), -- not nullable in version history
-         value      BIGINT NOT NULL,
-         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-         PRIMARY KEY (key, creator_id, token)
-      )",
-      &[]
-    )
-    .await?;
-    
-    Ok(())
+  pub async fn migrate<P: AsRef<path::Path>>(&self, dir: P) -> Result<Vec<usize>, error::Error> {
+    let driver = upgrade::driver::postgres::Driver::new(runtime::Handle::current(), self.pool.clone());
+    let provider = upgrade::version::provider::DirectoryProvider::new_with_path(dir)?;
+    let upgrader = upgrade::Upgrader::new(driver, provider)?;
+    match upgrader.upgrade_latest() {
+      Ok(applied) => Ok(applied),
+      Err(err) => Err(err.into()),
+    }
   }
   
   pub async fn fetch_account(&self, account_id: i64) -> Result<account::Account, error::Error> {
