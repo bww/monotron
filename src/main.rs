@@ -5,6 +5,8 @@ mod model;
 mod debug;
 mod upgrade;
 
+use std::collections;
+
 use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
@@ -141,6 +143,19 @@ async fn main() -> Result<(), error::Error> {
     .and_then(handle_delete_entry)
     .with(&json_content);
   
+  let store_entry_version_attrs = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs")
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and(warp::body::json())
+    .and_then(handle_store_entry_version_attrs)
+    .with(&json_content);
+  
+  let fetch_entry_version_attrs = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs")
+    .and(store_filter.clone())
+    .and(auth_filter.clone())
+    .and_then(handle_fetch_entry_version_attrs)
+    .with(&json_content);
+  
   let gets = warp::get().and(
     v1
       .or(fetch_account)
@@ -148,10 +163,12 @@ async fn main() -> Result<(), error::Error> {
       .or(fetch_authorization)
       .or(fetch_entry)
       .or(fetch_entry_version)
+      .or(fetch_entry_version_attrs)
       .recover(handle_rejection),
   );
   let puts = warp::put().and(
     inc_entry
+      .or(store_entry_version_attrs)
       .recover(handle_rejection),
   );
   let posts = warp::post().and(
@@ -332,4 +349,21 @@ async fn handle_inc_entry(account_id: i64, key: String, token: String, store: st
     Err(err) => return Err(err.into()),
   };
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
+}
+
+async fn handle_fetch_entry_version_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Series)?;
+  let attrs = match store.fetch_entry_version_attrs(account_id, key, token).await {
+    Ok(v) => v,
+    Err(err) => return Err(err.into()),
+  };
+  Ok(warp::reply::with_status(model::attrs::Attrs::new(attrs), http::StatusCode::OK))
+}
+
+async fn handle_store_entry_version_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization, attrs: collections::HashMap<String, String>) -> Result<impl warp::Reply, warp::Rejection> {
+  auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
+  match store.store_entry_version_attrs(account_id, key, token, &attrs).await {
+    Ok(_) => Ok(warp::reply::with_status(model::attrs::Attrs::new(attrs), http::StatusCode::OK)),
+    Err(err) => Err(err.into()),
+  }
 }
