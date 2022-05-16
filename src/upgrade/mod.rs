@@ -3,9 +3,7 @@ pub mod error;
 pub mod version;
 pub mod driver;
 
-use crate::upgrade;
-use crate::upgrade::driver::mock;
-use crate::upgrade::io::{IntoRead, BytesIntoRead};
+use crate::upgrade::io::IntoRead;
 
 pub trait Driver<R: IntoRead> {
   fn version(&self) -> Result<usize, error::Error>;

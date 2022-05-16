@@ -1,9 +1,7 @@
 pub mod provider;
 
-use std::io;
 use std::fs;
 use std::cmp;
-use std::iter;
 use std::path;
 
 use crate::upgrade::error;
