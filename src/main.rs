@@ -2,17 +2,15 @@ mod acl;
 mod error;
 mod store;
 mod model;
+mod debug;
 mod upgrade;
 
 use chrono;
 use warp::{http, Filter};
 use envconfig::Envconfig;
-use once_cell::sync;
 use serde_json::json;
 
 use crate::model::apikey::{self, Authenticate, AccessControl};
-
-static DEBUG: sync::OnceCell<bool> = sync::OnceCell::new();
 
 const HEADER_AUTHORIZATION: &str = "Authorization";
 
@@ -26,8 +24,6 @@ pub struct Config {
   pub root_api_key: Option<String>,
   #[envconfig(from = "ROOT_API_SECRET")]
   pub root_api_secret: Option<String>,
-  #[envconfig(from = "DEBUG", default = "false")]
-  pub debug: bool,
 }
 
 fn root_authorization(key: String, secret: String) -> apikey::Authorization {
@@ -55,14 +51,12 @@ async fn main() -> Result<(), error::Error> {
     Err(err) => panic!("*** Could not load configuration from environment: {}", err),
   };
   
-  DEBUG.set(conf.debug).expect("Could not set global debug state");
-  
   let root = match conf.root_api_key {
     Some(key) => Some(root_authorization(key, conf.root_api_secret.unwrap())),
     None => None,
   };
   
-  if conf.debug {
+  if debug::debug() {
     println!("----> Connecting to database: {}", conf.db_dsn);
   }else{
     println!("----> Connecting to database");
@@ -179,7 +173,7 @@ async fn main() -> Result<(), error::Error> {
 }
 
 async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
-  if *DEBUG.get().unwrap() {
+  if debug::debug() {
     println!("*** {:?}", &err);
   }
   if err.is_not_found() {

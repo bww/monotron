@@ -6,6 +6,7 @@ use tokio_postgres;
 use tokio::runtime;
 use crossbeam_channel;
 
+use crate::debug;
 use crate::upgrade;
 use crate::upgrade::io::IntoRead;
 use crate::upgrade::error;
@@ -70,7 +71,9 @@ impl Driver {
     let mut sql = String::new();
     reader.read_to_string(&mut sql)?;
     
-    println!(">>>>> Version {}:\n{}\n-----", version.version(), sql);
+    if debug::debug() {
+      println!(">>>>> Version {}:\n{}\n-----", version.version(), sql);
+    }
     
     let mut client = match pool.get().await {
       Ok(client) => client,
