@@ -7,6 +7,7 @@ use futures::{pin_mut, TryStreamExt};
 use tokio::task;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::runtime;
+use crossbeam_channel;
 
 use crate::upgrade;
 use crate::upgrade::error;
@@ -28,23 +29,32 @@ impl Driver {
 
 impl<R: upgrade::io::IntoRead> upgrade::Driver<R> for Driver {
   fn version(&self) -> Result<usize, error::Error> {
-    let version = self.handle.block_on(move || {
-      let client = match self.pool.get().await {
+    let (tx, rx) = crossbeam_channel::bounded(1);
+    let pool = self.pool.clone();
+    self.handle.spawn(async move {
+      let client = match pool.get().await {
         Ok(client) => client,
-        Err(err) => return Err(error::Error::DriverError),
+        Err(err) => {
+          tx.send(Err(error::Error::DriverError("Could not create client".to_string()))).unwrap();
+          return;
+        },
       };
       let res = match client.query_one(
-        "SELECT 1;",
+        "SELECT 1::BIGINT;",
         &[]
       ).await {
         Ok(res) => res,
-        Err(err) => return Err(error::Error::DriverError),
+        Err(err) => {
+          tx.send(Err(error::Error::DriverError("Could not query version".to_string()))).unwrap();
+          return;
+        },
       };
-      match res.try_get(0) {
-        Ok(version) => version,
-        Err(err) => return Err(error::Error::DriverError),
-      }
+      tx.send(match res.try_get(0) {
+        Ok(version) => Ok(version),
+        Err(err) => Err(error::Error::DriverError(format!("Could not read result: {}", err))),
+      }).unwrap();
     });
+    let version: i64 = rx.recv()??;
     Ok(version as usize)
   }
   

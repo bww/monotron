@@ -4,6 +4,7 @@ use std::path;
 
 use bb8_postgres;
 use tokio_postgres;
+use tokio::runtime;
 use futures::{pin_mut, TryStreamExt};
 
 use crate::model::account;
@@ -34,16 +35,14 @@ impl Store {
     return Ok(store);
   }
   
-  pub async fn migrate<P: AsRef<path::Path>>(&self, dir: P) -> Result<(), error::Error> {
+  pub async fn migrate<P: AsRef<path::Path>>(&self, dir: P) -> Result<Vec<usize>, error::Error> {
     let driver = upgrade::driver::postgres::Driver::new(runtime::Handle::current(), self.pool.clone());
     let provider = upgrade::version::provider::DirectoryProvider::new_with_path(dir)?;
     let upgrader = upgrade::Upgrader::new(driver, provider)?;
-    let applied = match upgrader.upgrade_latest() {
-      Ok(applied) => applied,
-      Err(err) => return Err(err.into()),
-    };
-    println!(">>> Applied migrations: {:?}", applied);
-    Ok(())
+    match upgrader.upgrade_latest() {
+      Ok(applied) => Ok(applied),
+      Err(err) => Err(err.into()),
+    }
   }
   
   async fn init(&self) -> Result<(), error::Error> {
