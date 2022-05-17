@@ -288,8 +288,9 @@ impl Store {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
-    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
+    tx.execute("DELETE FROM mn_entry_version_attr WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
+    tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     
     tx.commit().await?;
     Ok(())
@@ -377,6 +378,29 @@ impl Store {
     
     tx.commit().await?;
     Ok(())
+  }
+  
+  pub async fn fetch_entry_version_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<String, error::Error> {
+    let client = self.pool.get().await?;
+    
+    let stream = client.query_raw("
+      SELECT value FROM mn_entry_version_attr
+      WHERE key = $1 AND creator_id = $2 AND token = $3 AND name = $4
+      ORDER BY key",
+      slice_iter(&[
+        &key,
+        &account_id,
+        &token,
+        &name,
+      ])
+    )
+    .await?;
+    pin_mut!(stream);
+    
+    match stream.try_next().await? {
+      Some(row) => Ok(row.try_get(0)?),
+      None => Err(error::Error::NotFoundError),
+    }
   }
   
   pub async fn fetch_entry_version_attrs(&self, account_id: i64, key: String, token: String) -> Result<collections::HashMap<String, String>, error::Error> {
