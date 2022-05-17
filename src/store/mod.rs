@@ -403,6 +403,25 @@ impl Store {
     Ok(map)
   }
   
+  pub async fn delete_entry_version_attrs(&self, account_id: i64, key: String, token: String) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+   
+    tx.execute("
+      DELETE FROM mn_entry_version_attr
+      WHERE key = $1 AND creator_id = $2 AND token = $3",
+      &[
+        &key,
+        &account_id,
+        &token,
+      ]
+    )
+    .await?;
+    
+    tx.commit().await?;
+    Ok(())
+  }
+  
   pub async fn fetch_entry_version_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<String, error::Error> {
     let client = self.pool.get().await?;
     
