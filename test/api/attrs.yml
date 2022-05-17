@@ -111,6 +111,51 @@ tests:
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
       headers:
         Content-Type: application/json
+      entity: |
+        {
+          "first": "1",
+          "second": "2",
+          "third": "3"
+        }
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      headers:
+        Content-Type: application/json
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+      entity: |
+        {
+          "first": "1",
+          "second": "2",
+          "third": "3"
+        }
+
+    response:
+      status: 403
+
+  -
+    title: PUT /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    doc: |
+      Store multiple attributes for a Series at the specified token.
+      
+      This operation might be more accurately described as a `PATCH`; keys present
+      in the provied set are stored, but any existing keys not present in the
+      provided set are not deleted.
+      
+      Requires `write:series` scope in the Account.
+    
+    request:
+      method: PUT
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      headers:
+        Content-Type: application/json
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -135,9 +180,34 @@ tests:
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
       basic-auth:
-        username: ${grant1.response.value.api_key.key}
-        password: ${grant1.response.value.api_key.secret}
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    doc: |
+      Fetch attributes for a Series at the specified token.
+      
+      Requires `read:series` scope in the Account.
+    
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 200
@@ -153,9 +223,34 @@ tests:
     request:
       method: GET
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
       basic-auth:
-        username: ${grant1.response.value.api_key.key}
-        password: ${grant1.response.value.api_key.secret}
+        username: ${grant3.response.value.api_key.key}
+        password: ${grant3.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+    doc: |
+      Fetch a specific attribute for a Series at the specified token.
+      
+      Requires `read:series` scope in the Account.
+    
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
 
     response:
       status: 200
@@ -163,6 +258,31 @@ tests:
         1
 
   -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+    doc: |
+      Delete a specific attribute from a Series at the specified token.
+      
+      Requires `write:series` scope in the Account.
+    
     request:
       method: DELETE
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
@@ -198,6 +318,31 @@ tests:
         2
 
   -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+
+    response:
+      status: 401
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      basic-auth:
+        username: ${grant2.response.value.api_key.key}
+        password: ${grant2.response.value.api_key.secret}
+
+    response:
+      status: 403
+
+  -
+    title: DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    doc: |
+      Delete every attribute from a Series at the specified token.
+      
+      Requires `write:series` scope in the Account.
+    
     request:
       method: DELETE
       url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
