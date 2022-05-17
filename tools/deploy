@@ -35,18 +35,18 @@ for i; do
   esac
 done
 
-if [ ! -z "$1" ]; then
-  values="$1"
-  shift
-else
-  echo "Usage: deploy <values>"
-  exit 1
-fi
-
 if [ -z "$image_tag" ]; then
   echo "*** No image tag specified; use: -t <tag>"
   exit 1
 fi
+if [ -z "$1" ]; then
+  echo "No values files provided; use: $0 <values> [values ...]"
+  exit 1
+fi
+for arg in $@; do
+  extra_args="$extra_args -f $arg";
+  shift;
+done
 
 # where are we
 cluster="$(kubectl config current-context)"
@@ -57,5 +57,5 @@ read -p "Really deploy? [y/N] " -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  helm upgrade -i -f "$values" --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
+  helm upgrade -i --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
 fi
