@@ -422,6 +422,27 @@ impl Store {
     Ok(())
   }
   
+  pub async fn store_entry_version_attr(&self, account_id: i64, key: String, token: String, name: &str, value: &str) -> Result<(), error::Error> {
+    let mut client = self.pool.get().await?;
+    let tx = client.transaction().await?;
+    
+    tx.execute("
+      INSERT INTO mn_entry_version_attr (key, creator_id, token, name, value) VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (key, creator_id, token, name) DO UPDATE SET value = $5, updated_at = now()",
+      &[
+        &key,
+        &account_id,
+        &token,
+        &name,
+        &value,
+      ]
+    )
+    .await?;
+    
+    tx.commit().await?;
+    Ok(())
+  }
+  
   pub async fn fetch_entry_version_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<String, error::Error> {
     let client = self.pool.get().await?;
     
