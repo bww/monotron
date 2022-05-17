@@ -161,3 +161,25 @@ tests:
       status: 200
       entity: |
         1
+
+  -
+    request:
+      method: DELETE
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 200
+
+  -
+    request:
+      method: GET
+      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      basic-auth:
+        username: ${grant1.response.value.api_key.key}
+        password: ${grant1.response.value.api_key.secret}
+
+    response:
+      status: 404
