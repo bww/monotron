@@ -144,42 +144,42 @@ async fn main() -> Result<(), error::Error> {
     .and_then(handle_delete_entry)
     .with(&json_content);
   
-  let store_entry_version_attrs = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs")
+  let store_token_attrs = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs")
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::json())
-    .and_then(handle_store_entry_version_attrs)
+    .and_then(handle_store_token_attrs)
     .with(&json_content);
   
-  let fetch_entry_version_attrs = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs")
+  let fetch_token_attrs = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs")
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_fetch_entry_version_attrs)
+    .and_then(handle_fetch_token_attrs)
     .with(&json_content);
   
-  let delete_entry_version_attrs = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs")
+  let delete_token_attrs = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs")
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_delete_entry_version_attrs)
+    .and_then(handle_delete_token_attrs)
     .with(&json_content);
   
-  let store_entry_version_attr = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs" / String)
+  let store_token_attr = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
     .and(warp::body::bytes())
-    .and_then(handle_store_entry_version_attr)
+    .and_then(handle_store_token_attr)
     .with(&json_content);
   
-  let fetch_entry_version_attr = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs" / String)
+  let fetch_token_attr = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_fetch_entry_version_attr)
+    .and_then(handle_fetch_token_attr)
     .with(&json_content);
   
-  let delete_entry_version_attr = warp::path!("v1" / "accounts" / i64 / "series" / String / String / "attrs" / String)
+  let delete_token_attr = warp::path!("v1" / "accounts" / i64 / "tokens" / String / String / "attrs" / String)
     .and(store_filter.clone())
     .and(auth_filter.clone())
-    .and_then(handle_delete_entry_version_attr)
+    .and_then(handle_delete_token_attr)
     .with(&json_content);
   
   let gets = warp::get().and(
@@ -189,14 +189,14 @@ async fn main() -> Result<(), error::Error> {
       .or(fetch_authorization)
       .or(fetch_entry)
       .or(fetch_entry_version)
-      .or(fetch_entry_version_attr)
-      .or(fetch_entry_version_attrs)
+      .or(fetch_token_attr)
+      .or(fetch_token_attrs)
       .recover(handle_rejection),
   );
   let puts = warp::put().and(
     inc_entry
-      .or(store_entry_version_attr)
-      .or(store_entry_version_attrs)
+      .or(store_token_attr)
+      .or(store_token_attrs)
       .recover(handle_rejection),
   );
   let posts = warp::post().and(
@@ -206,8 +206,8 @@ async fn main() -> Result<(), error::Error> {
   let dels = warp::delete().and(
     delete_authorization
       .or(delete_entry)
-      .or(delete_entry_version_attr)
-      .or(delete_entry_version_attrs)
+      .or(delete_token_attr)
+      .or(delete_token_attrs)
       .recover(handle_rejection),
   );
   
@@ -381,55 +381,55 @@ async fn handle_inc_entry(account_id: i64, key: String, token: String, store: st
   Ok(warp::reply::with_status(entry, http::StatusCode::OK))
 }
 
-async fn handle_fetch_entry_version_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_fetch_token_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Series)?;
-  let attrs = match store.fetch_entry_version_attrs(account_id, key, token).await {
+  let attrs = match store.fetch_token_attrs(account_id, key, token).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
   Ok(warp::reply::with_status(model::attrs::Attrs::new(attrs), http::StatusCode::OK))
 }
 
-async fn handle_store_entry_version_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization, attrs: collections::HashMap<String, String>) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_store_token_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization, attrs: collections::HashMap<String, String>) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
-  match store.store_entry_version_attrs(account_id, key, token, &attrs).await {
+  match store.store_token_attrs(account_id, key, token, &attrs).await {
     Ok(_) => Ok(warp::reply::with_status(model::attrs::Attrs::new(attrs), http::StatusCode::OK)),
     Err(err) => Err(err.into()),
   }
 }
 
-async fn handle_delete_entry_version_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_delete_token_attrs(account_id: i64, key: String, token: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
-  match store.delete_entry_version_attrs(account_id, key, token).await {
+  match store.delete_token_attrs(account_id, key, token).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
   }
 }
 
-async fn handle_store_entry_version_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization, value: bytes::Bytes) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_store_token_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization, value: bytes::Bytes) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
   let value = match String::from_utf8(value.to_vec()) {
     Ok(value) => value,
     Err(err) => return Err(error::Error::Utf8Error(err.utf8_error()).into()),
   };
-  match store.store_entry_version_attr(account_id, key, token, &name, &value).await {
+  match store.store_token_attr(account_id, key, token, &name, &value).await {
     Ok(_) => Ok(warp::reply::with_status(model::attrs::Attrs::singleton(name, value), http::StatusCode::OK)),
     Err(err) => Err(err.into()),
   }
 }
 
-async fn handle_fetch_entry_version_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_fetch_token_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Read, acl::scope::Resource::Series)?;
-  let val = match store.fetch_entry_version_attr(account_id, key, token, name).await {
+  let val = match store.fetch_token_attr(account_id, key, token, name).await {
     Ok(v) => v,
     Err(err) => return Err(err.into()),
   };
   Ok(warp::reply::with_status(val, http::StatusCode::OK))
 }
 
-async fn handle_delete_entry_version_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_delete_token_attr(account_id: i64, key: String, token: String, name: String, store: store::Store, auth: apikey::Authorization) -> Result<impl warp::Reply, warp::Rejection> {
   auth.assert_allows_in_account(account_id, acl::scope::Operation::Write, acl::scope::Resource::Series)?;
-  match store.delete_entry_version_attr(account_id, key, token, name).await {
+  match store.delete_token_attr(account_id, key, token, name).await {
     Ok(_) => Ok(warp::reply::reply()),
     Err(err) => Err(err.into()),
   }

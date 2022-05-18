@@ -1,14 +1,14 @@
-# Monotonic Series Attributes
+# Monotonic Token Attributes
 
 ## Contents
 
-* [PUT /v1/accounts/{account_id}/series/{series_key}/{token}/attrs](#put-v1accountsaccount_idseriesseries_keytokenattrs)
-* [GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs](#get-v1accountsaccount_idseriesseries_keytokenattrs)
-* [GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}](#get-v1accountsaccount_idseriesseries_keytokenattrsattribute_key)
-* [DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}](#delete-v1accountsaccount_idseriesseries_keytokenattrsattribute_key)
-* [DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs](#delete-v1accountsaccount_idseriesseries_keytokenattrs)
+* [PUT /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs](#put-v1accountsaccount_idtokensseries_keytokenattrs)
+* [GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs](#get-v1accountsaccount_idtokensseries_keytokenattrs)
+* [GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}](#get-v1accountsaccount_idtokensseries_keytokenattrsattribute_key)
+* [DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}](#delete-v1accountsaccount_idtokensseries_keytokenattrsattribute_key)
+* [DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs](#delete-v1accountsaccount_idtokensseries_keytokenattrs)
 
-## PUT /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+## PUT /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
 
 Store multiple attributes for a Series at the specified token.
 
@@ -21,11 +21,11 @@ Requires `write:series` scope in the Account.
 ### Example request
 
 ```http
-PUT /v1/accounts/0/series/example-1/000001/attrs HTTP/1.1
+PUT /v1/accounts/0/tokens/example-1/000001/attrs HTTP/1.1
 Host: localhost:3030
+Authorization: Basic M1JYUVlMTEFHV0prVHV3R0FKWW9lcGEwOjBzaE9OUFJtUjNYMkNVa2NnTk1XSEx3MkNkVklHRUZVTG42NHgxVlZxWFZNbmVtSVl5RzNhODQwWTlMUTR2UnU3elRlUU13MmRzSzJETmJWdHdVRGRydlVLUGV3RUNEQ0dTejRET0NQTmcxNm1UdU9EVnJWNllEcDc0NU9jZGJP
 Content-Length: 52
 Content-Type: application/json
-Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV6SFZBUnpRU0FHV0VPWWZHQktTazNhQTQ4eDkwbDJFWUpuN2VJejU2ek1ORTRwRXh5TkV4WWo1NWQwcjcxb1NJanBDaTFlVlY1TFVQWW9TZGNDSklXSzNGMzd5eGJCbTJEZnNxeHNLSWd5RnND
 
 {
   "first": "1",
@@ -38,9 +38,9 @@ Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV
 
 ```http
 HTTP/1.1 200 OK
+Date: Wed, 18 May 2022 12:52:15 GMT
 Content-Type: application/json
 Content-Length: 38
-Date: Tue, 17 May 2022 22:38:16 GMT
 
 {
   "first": "1",
@@ -50,7 +50,7 @@ Date: Tue, 17 May 2022 22:38:16 GMT
 ```
 
 
-## GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+## GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
 
 Fetch attributes for a Series at the specified token.
 
@@ -59,9 +59,9 @@ Requires `read:series` scope in the Account.
 ### Example request
 
 ```http
-GET /v1/accounts/0/series/example-1/000001/attrs HTTP/1.1
+GET /v1/accounts/0/tokens/example-1/000001/attrs HTTP/1.1
 Host: localhost:3030
-Authorization: Basic WkhQaHpvZEl1WllpMGJrT1Y5dEdGQWd3OlNaa3BqdlBWVzhOMTNZOU1telJUTkFKdjBJRTJ6bXQ5RENmTWlLZHBoaUpRZmdDSGhGZzVXaUlUYUZuZTVRYnVFSGRkemNXRFY5VWlpQ1RnV1B3Z2E2SXZuRUNCQWppNDNEM1VtVUhtTFFEUzNGdVB6MUtDUkpGZG1TQXZTeFli
+Authorization: Basic RDE3M2ZSNEdyVTc5NTNaR1BONDZCa2xLOk5Tc3M5aDE3UzNCZVVkQndRM0Z3bDNoZkE0dGkwaGh1RkJ3ZWVBQzh1VW5yODB5ZzZCemNSTUM1T1piQzV1OXZhTzRBR3RCT3JNdFU3TkJmZGl6SFNKZm1KcVlucE84c1ZxRUx3UlNMbjgwMGF0MzY1YU1mek9UcGViMGlFbnpP
 
 ```
 
@@ -71,7 +71,7 @@ Authorization: Basic WkhQaHpvZEl1WllpMGJrT1Y5dEdGQWd3OlNaa3BqdlBWVzhOMTNZOU1telJ
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 38
-Date: Tue, 17 May 2022 22:38:16 GMT
+Date: Wed, 18 May 2022 12:52:15 GMT
 
 {
   "first": "1",
@@ -81,7 +81,7 @@ Date: Tue, 17 May 2022 22:38:16 GMT
 ```
 
 
-## GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+## GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}
 
 Fetch a specific attribute for a Series at the specified token.
 
@@ -90,9 +90,9 @@ Requires `read:series` scope in the Account.
 ### Example request
 
 ```http
-GET /v1/accounts/0/series/example-1/000001/attrs/first HTTP/1.1
+GET /v1/accounts/0/tokens/example-1/000001/attrs/first HTTP/1.1
 Host: localhost:3030
-Authorization: Basic WkhQaHpvZEl1WllpMGJrT1Y5dEdGQWd3OlNaa3BqdlBWVzhOMTNZOU1telJUTkFKdjBJRTJ6bXQ5RENmTWlLZHBoaUpRZmdDSGhGZzVXaUlUYUZuZTVRYnVFSGRkemNXRFY5VWlpQ1RnV1B3Z2E2SXZuRUNCQWppNDNEM1VtVUhtTFFEUzNGdVB6MUtDUkpGZG1TQXZTeFli
+Authorization: Basic RDE3M2ZSNEdyVTc5NTNaR1BONDZCa2xLOk5Tc3M5aDE3UzNCZVVkQndRM0Z3bDNoZkE0dGkwaGh1RkJ3ZWVBQzh1VW5yODB5ZzZCemNSTUM1T1piQzV1OXZhTzRBR3RCT3JNdFU3TkJmZGl6SFNKZm1KcVlucE84c1ZxRUx3UlNMbjgwMGF0MzY1YU1mek9UcGViMGlFbnpP
 
 ```
 
@@ -100,15 +100,15 @@ Authorization: Basic WkhQaHpvZEl1WllpMGJrT1Y5dEdGQWd3OlNaa3BqdlBWVzhOMTNZOU1telJ
 
 ```http
 HTTP/1.1 200 OK
+Date: Wed, 18 May 2022 12:52:15 GMT
 Content-Type: application/json
 Content-Length: 1
-Date: Tue, 17 May 2022 22:38:16 GMT
 
 1
 ```
 
 
-## DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+## DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}
 
 Delete a specific attribute from a Series at the specified token.
 
@@ -117,9 +117,9 @@ Requires `write:series` scope in the Account.
 ### Example request
 
 ```http
-DELETE /v1/accounts/0/series/example-1/000001/attrs/first HTTP/1.1
+DELETE /v1/accounts/0/tokens/example-1/000001/attrs/first HTTP/1.1
 Host: localhost:3030
-Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV6SFZBUnpRU0FHV0VPWWZHQktTazNhQTQ4eDkwbDJFWUpuN2VJejU2ek1ORTRwRXh5TkV4WWo1NWQwcjcxb1NJanBDaTFlVlY1TFVQWW9TZGNDSklXSzNGMzd5eGJCbTJEZnNxeHNLSWd5RnND
+Authorization: Basic M1JYUVlMTEFHV0prVHV3R0FKWW9lcGEwOjBzaE9OUFJtUjNYMkNVa2NnTk1XSEx3MkNkVklHRUZVTG42NHgxVlZxWFZNbmVtSVl5RzNhODQwWTlMUTR2UnU3elRlUU13MmRzSzJETmJWdHdVRGRydlVLUGV3RUNEQ0dTejRET0NQTmcxNm1UdU9EVnJWNllEcDc0NU9jZGJP
 
 ```
 
@@ -129,13 +129,13 @@ Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 0
-Date: Tue, 17 May 2022 22:38:16 GMT
+Date: Wed, 18 May 2022 12:52:15 GMT
 
 
 ```
 
 
-## DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+## DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
 
 Delete every attribute from a Series at the specified token.
 
@@ -144,9 +144,9 @@ Requires `write:series` scope in the Account.
 ### Example request
 
 ```http
-DELETE /v1/accounts/0/series/example-1/000001/attrs HTTP/1.1
+DELETE /v1/accounts/0/tokens/example-1/000001/attrs HTTP/1.1
 Host: localhost:3030
-Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV6SFZBUnpRU0FHV0VPWWZHQktTazNhQTQ4eDkwbDJFWUpuN2VJejU2ek1ORTRwRXh5TkV4WWo1NWQwcjcxb1NJanBDaTFlVlY1TFVQWW9TZGNDSklXSzNGMzd5eGJCbTJEZnNxeHNLSWd5RnND
+Authorization: Basic M1JYUVlMTEFHV0prVHV3R0FKWW9lcGEwOjBzaE9OUFJtUjNYMkNVa2NnTk1XSEx3MkNkVklHRUZVTG42NHgxVlZxWFZNbmVtSVl5RzNhODQwWTlMUTR2UnU3elRlUU13MmRzSzJETmJWdHdVRGRydlVLUGV3RUNEQ0dTejRET0NQTmcxNm1UdU9EVnJWNllEcDc0NU9jZGJP
 
 ```
 
@@ -156,7 +156,7 @@ Authorization: Basic NkZXa3pNeWJhdUZ3bDlrdk1kN3licEFBOlVFbUpPZkhWWjFJNmpOd2owZlV
 HTTP/1.1 200 OK
 Content-Type: application/json
 Content-Length: 0
-Date: Tue, 17 May 2022 22:38:16 GMT
+Date: Wed, 18 May 2022 12:52:15 GMT
 
 
 ```

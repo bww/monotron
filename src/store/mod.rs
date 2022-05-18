@@ -288,7 +288,6 @@ impl Store {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
-    tx.execute("DELETE FROM mn_entry_version_attr WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     tx.execute("DELETE FROM mn_entry_version WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     tx.execute("DELETE FROM mn_entry WHERE key = $1 AND creator_id = $2", &[&key, &account_id]).await?;
     
@@ -357,13 +356,13 @@ impl Store {
     Ok(update)
   }
   
-  pub async fn store_entry_version_attrs(&self, account_id: i64, key: String, token: String, attrs: &collections::HashMap<String, String>) -> Result<(), error::Error> {
+  pub async fn store_token_attrs(&self, account_id: i64, key: String, token: String, attrs: &collections::HashMap<String, String>) -> Result<(), error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
     for (name, value) in attrs {
       tx.execute("
-        INSERT INTO mn_entry_version_attr (key, creator_id, token, name, value) VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO mn_token_attr (key, creator_id, token, name, value) VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (key, creator_id, token, name) DO UPDATE SET value = $5, updated_at = now()",
         &[
           &key,
@@ -380,11 +379,11 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_entry_version_attrs(&self, account_id: i64, key: String, token: String) -> Result<collections::HashMap<String, String>, error::Error> {
+  pub async fn fetch_token_attrs(&self, account_id: i64, key: String, token: String) -> Result<collections::HashMap<String, String>, error::Error> {
     let client = self.pool.get().await?;
     
     let rows = client.query("
-      SELECT name, value FROM mn_entry_version_attr
+      SELECT name, value FROM mn_token_attr
       WHERE key = $1 AND creator_id = $2 AND token = $3
       ORDER BY key",
       &[
@@ -403,12 +402,12 @@ impl Store {
     Ok(map)
   }
   
-  pub async fn delete_entry_version_attrs(&self, account_id: i64, key: String, token: String) -> Result<(), error::Error> {
+  pub async fn delete_token_attrs(&self, account_id: i64, key: String, token: String) -> Result<(), error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
    
     tx.execute("
-      DELETE FROM mn_entry_version_attr
+      DELETE FROM mn_token_attr
       WHERE key = $1 AND creator_id = $2 AND token = $3",
       &[
         &key,
@@ -422,12 +421,12 @@ impl Store {
     Ok(())
   }
   
-  pub async fn store_entry_version_attr(&self, account_id: i64, key: String, token: String, name: &str, value: &str) -> Result<(), error::Error> {
+  pub async fn store_token_attr(&self, account_id: i64, key: String, token: String, name: &str, value: &str) -> Result<(), error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
     
     tx.execute("
-      INSERT INTO mn_entry_version_attr (key, creator_id, token, name, value) VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO mn_token_attr (key, creator_id, token, name, value) VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (key, creator_id, token, name) DO UPDATE SET value = $5, updated_at = now()",
       &[
         &key,
@@ -443,11 +442,11 @@ impl Store {
     Ok(())
   }
   
-  pub async fn fetch_entry_version_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<String, error::Error> {
+  pub async fn fetch_token_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<String, error::Error> {
     let client = self.pool.get().await?;
     
     let stream = client.query_raw("
-      SELECT value FROM mn_entry_version_attr
+      SELECT value FROM mn_token_attr
       WHERE key = $1 AND creator_id = $2 AND token = $3 AND name = $4
       ORDER BY key",
       slice_iter(&[
@@ -466,12 +465,12 @@ impl Store {
     }
   }
   
-  pub async fn delete_entry_version_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<(), error::Error> {
+  pub async fn delete_token_attr(&self, account_id: i64, key: String, token: String, name: String) -> Result<(), error::Error> {
     let mut client = self.pool.get().await?;
     let tx = client.transaction().await?;
    
     tx.execute("
-      DELETE FROM mn_entry_version_attr
+      DELETE FROM mn_token_attr
       WHERE key = $1 AND creator_id = $2 AND token = $3 AND name = $4",
       &[
         &key,
