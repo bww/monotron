@@ -1,5 +1,5 @@
 
-title: Monotonic Series Attributes
+title: Monotonic Token Attributes
 
 options:
   table-of-contents: y
@@ -84,31 +84,9 @@ tests:
       status: 200
 
   -
-    require: true
-    
     request:
       method: PUT
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001
-      headers:
-        Content-Type: application/json
-      basic-auth:
-        username: ${grant1.response.value.api_key.key}
-        password: ${grant1.response.value.api_key.secret}
-
-    response:
-      status: 200
-      compare: semantic
-      entity: |
-        {
-          "key": "${vars.series_1}",
-          "token": "000001",
-          "value": 1
-        }
-
-  -
-    request:
-      method: PUT
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       headers:
         Content-Type: application/json
       entity: |
@@ -124,7 +102,7 @@ tests:
   -
     request:
       method: PUT
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       headers:
         Content-Type: application/json
       basic-auth:
@@ -141,7 +119,7 @@ tests:
       status: 403
 
   -
-    title: PUT /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    title: PUT /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
     doc: |
       Store multiple attributes for a Series at the specified token.
       
@@ -153,7 +131,7 @@ tests:
     
     request:
       method: PUT
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       headers:
         Content-Type: application/json
       basic-auth:
@@ -179,7 +157,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
 
     response:
       status: 401
@@ -187,7 +165,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       basic-auth:
         username: ${grant3.response.value.api_key.key}
         password: ${grant3.response.value.api_key.secret}
@@ -196,7 +174,7 @@ tests:
       status: 403
 
   -
-    title: GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    title: GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
     doc: |
       Fetch attributes for a Series at the specified token.
       
@@ -204,7 +182,7 @@ tests:
     
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       basic-auth:
         username: ${grant2.response.value.api_key.key}
         password: ${grant2.response.value.api_key.secret}
@@ -222,7 +200,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
 
     response:
       status: 401
@@ -230,7 +208,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant3.response.value.api_key.key}
         password: ${grant3.response.value.api_key.secret}
@@ -239,7 +217,7 @@ tests:
       status: 403
 
   -
-    title: GET /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+    title: GET /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}
     doc: |
       Fetch a specific attribute for a Series at the specified token.
       
@@ -247,7 +225,7 @@ tests:
     
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant2.response.value.api_key.key}
         password: ${grant2.response.value.api_key.secret}
@@ -260,7 +238,7 @@ tests:
   -
     request:
       method: PUT
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -280,7 +258,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -293,7 +271,7 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
 
     response:
       status: 401
@@ -301,7 +279,7 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant2.response.value.api_key.key}
         password: ${grant2.response.value.api_key.secret}
@@ -310,7 +288,7 @@ tests:
       status: 403
 
   -
-    title: DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs/{attribute_key}
+    title: DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs/{attribute_key}
     doc: |
       Delete a specific attribute from a Series at the specified token.
       
@@ -318,7 +296,7 @@ tests:
     
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -329,7 +307,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/first
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/first
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -340,7 +318,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/second
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/second
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -353,7 +331,7 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
 
     response:
       status: 401
@@ -361,7 +339,7 @@ tests:
   -
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       basic-auth:
         username: ${grant2.response.value.api_key.key}
         password: ${grant2.response.value.api_key.secret}
@@ -370,7 +348,7 @@ tests:
       status: 403
 
   -
-    title: DELETE /v1/accounts/{account_id}/series/{series_key}/{token}/attrs
+    title: DELETE /v1/accounts/{account_id}/tokens/{series_key}/{token}/attrs
     doc: |
       Delete every attribute from a Series at the specified token.
       
@@ -378,7 +356,7 @@ tests:
     
     request:
       method: DELETE
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -389,7 +367,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/second
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/second
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
@@ -400,7 +378,7 @@ tests:
   -
     request:
       method: GET
-      url: /v1/accounts/${vars.account_id}/series/${vars.series_1}/000001/attrs/third
+      url: /v1/accounts/${vars.account_id}/tokens/${vars.series_1}/000001/attrs/third
       basic-auth:
         username: ${grant1.response.value.api_key.key}
         password: ${grant1.response.value.api_key.secret}
