@@ -3,4 +3,4 @@
 * [Accounts](account.md)
 * [Access Control](acl.md)
 * [Series](series.md)
-* [Series Attributes](attrs.md)
+* [Token Attributes](attrs.md)
