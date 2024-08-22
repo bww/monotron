@@ -15,42 +15,48 @@ project_home=$(cd "$me_home/.." && pwd)
 
 # defaults
 image_name=monotron
-image_host=gcr.io
+context_name=brian
+image_host=docker.io
+version=$(shell git log --pretty=format:'%h' -n 1)
 
 # parse arguments
-args=$(getopt p: $*)
+args=$(getopt p:v: $*)
 set -- $args
 for i; do
   case "$i"
   in
     -p)
-      gcp_project="$2"; shift;
+      context_name="$2"; shift;
+      shift;;
+    -v)
+      version="$2"; shift;
       shift;;
     --)
       shift; break;;
   esac
 done
 
-if [ -z "$gcp_project" ]; then
-  echo "*** No GCP project specified for repo; use: -p <project_id>"
+if [ -z "$context_name" ]; then
+  echo "*** No context specified for repo; use: -p <project_id>"
+  exit 1
+fi
+if [ -z "$version" ]; then
+  echo "*** No version specified; use: -v <version>"
   exit 1
 fi
 
 # configure
-image_url=$image_host/$gcp_project/$image_name
+image_url=$image_host/$context_name/$image_name
 
 # build our container
 docker build \
   -t "$image_name:latest" \
-  -t "$image_name:$ENVIRON" \
-  -t "$image_name:$GITHASH" \
+  -t "$image_name:$version" \
   -t "$image_url:latest" \
-  -t "$image_url:$ENVIRON" \
-  -t "$image_url:$GITHASH" \
+  -t "$image_url:$version" \
   -f "$project_home/deploy/build/Dockerfile" \
   "$project_home"
 
 # push to our repo
 docker push "$image_url:latest"
-docker push "$image_url:$ENVIRON"
-docker push "$image_url:$GITHASH"
+docker push "$image_url:$version"
