@@ -17,7 +17,7 @@ project_home=$(cd "$me_home/.." && pwd)
 image_name=monotron
 context_name=brian
 image_host=docker.io
-version=$(shell git log --pretty=format:'%h' -n 1)
+version=$VERSION
 
 # parse arguments
 args=$(getopt p:v: $*)
@@ -36,14 +36,9 @@ for i; do
   esac
 done
 
-if [ -z "$context_name" ]; then
-  echo "*** No context specified for repo; use: -p <project_id>"
-  exit 1
-fi
-if [ -z "$version" ]; then
-  echo "*** No version specified; use: -v <version>"
-  exit 1
-fi
+# validate our state
+assert_flag "$context_name" "No context specified for repo; use: -p <project_id>"
+assert_flag "$version" "No version specified; use: -v <version>"
 
 # configure
 image_url=$image_host/$context_name/$image_name
