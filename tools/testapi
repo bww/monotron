@@ -26,13 +26,13 @@ exec_cmd="$project_home/target/debug/monotron"
 test_root="$project_home/test/api"
 
 # parse arguments
-args=$(getopt d $*)
+args=$(getopt D: $*)
 set -- $args
 for i; do
   case "$i"
   in
-    -d)
-      extra_flags=$(append_flags "$extra_flags" "-gendoc -doc:include-http -doc:format-entities");
+    -D)
+      extra_flags="$extra_flags --gendoc --doc:type openapi --doc:include-http --doc:format-entities --doc:output $2"; shift;
       shift;;
     --)
       shift;
@@ -50,16 +50,16 @@ packages=$*
 # run integration tests
 if [ ! -z "$packages" ]; then \
   $INSTAUNIT $extra_flags \
-    -base-url "http://$hostname:3030/" \
-    -http:redirects 0 \
-    -exec "${exec_cmd}" \
-    -await "http://$hostname:3030/v1" \
+    --base-url "http://$hostname:3030/" \
+    --http:redirects 0 \
+    --exec "${exec_cmd}" \
+    --await "http://$hostname:3030/v1" \
     $services $(echo "$packages" | tr ',' ' ' | perl -pe 's/\s+/\n/g' | xargs -I '%' echo "$test_root/%.yml" | perl -pe 's/\n/ /g')
 else
   $INSTAUNIT $extra_flags \
-    -base-url "http://$hostname:3030/" \
-    -http:redirects 0 \
-    -exec "${exec_cmd}" \
-    -await "http://$hostname:3030/v1" \
+    --base-url "http://$hostname:3030/" \
+    --http:redirects 0 \
+    --exec "${exec_cmd}" \
+    --await "http://$hostname:3030/v1" \
     $service $(find "$test_root" -name '*.yml' -and \! -name '*-service.yml' | sort)
 fi
