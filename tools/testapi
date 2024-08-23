@@ -16,6 +16,9 @@ export DB_DSN=postgresql://postgres@localhost/monotron_$ENVIRON?connect_timeout=
 export ROOT_API_KEY=testapi
 export ROOT_API_SECRET=secret123
 
+# tools
+export REDOCLY=${REDOCLY:=redocly}
+
 # deps
 . "$me_home/_lib.sh"
 
@@ -32,7 +35,8 @@ for i; do
   case "$i"
   in
     -D)
-      extra_flags="$extra_flags --gendoc --doc:type openapi --doc:include-http --doc:format-entities --doc:output $2"; shift;
+      docs_root="$2"; shift;
+      extra_flags=$(append_flags "$extra_flags" "--gendoc --doc:type openapi --doc:include-http --doc:format-entities --doc:output $docs_root");
       shift;;
     --)
       shift;
@@ -62,4 +66,9 @@ else
     --exec "${exec_cmd}" \
     --await "http://$hostname:3030/v1" \
     $service $(find "$test_root" -name '*.yml' -and \! -name '*-service.yml' | sort)
+fi
+
+if [ ! -z "$docs_root" ]; then
+  which $REDOCLY &> /dev/null || (vs_echo "You must install Redocly; try something like:\n\t\$ npm i -g @redocly/cli@latest\nor download it from:\n\t➡ https://github.com/Redocly/redocly-cli" && exit 1)
+  $REDOCLY build-docs -o "$docs_root/service.html" "$docs_root/service.json"
 fi

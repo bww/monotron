@@ -17,3 +17,11 @@ assert_flag () {
     exit 1
   fi
 }
+
+vs_echo () {
+  if [ $(shell uname) = "Linux" ]; then
+    echo $*
+  else
+    echo -e $*
+  fi
+}
