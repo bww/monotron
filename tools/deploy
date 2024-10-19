@@ -18,7 +18,7 @@ component=monotron
 image_tag=$ENVIRON
 
 # parse arguments
-args=$(getopt s:t: $*)
+args=$(getopt s:t:S: $*)
 set -- $args
 for i; do
   case "$i"
@@ -28,6 +28,10 @@ for i; do
       shift;;
     -t)
       image_tag="$2"; shift;
+      shift;;
+    -S) # read secrets from stdin
+      secrets_url="$2"; shift;
+      extra_args="$extra_args -f -";
       shift;;
     --)
       shift;
@@ -50,12 +54,18 @@ done
 
 # where are we
 cluster="$(kubectl config current-context)"
-echo -e "You are about to install $component:$image_tag here:\n\n    ➤ $cluster"
+echo -e "You are on branch:\n    ➤ $(git branch --show-current)"
+echo
+echo -e "You are about to install $component:$image_tag here:\n    ➤ $cluster"
 
 echo
 read -p "Really deploy? [y/N] " -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  helm upgrade -i --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
+  if [ -n "$secrets_url" ]; then
+    keybase fs read "$secrets_url" | helm upgrade -i --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
+  else
+    helm upgrade -i --set-string image.tag=$image_tag $extra_args "$component" "$project_home/deploy/k8s/$component"
+  fi
 fi
